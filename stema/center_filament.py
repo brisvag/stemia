@@ -43,8 +43,8 @@ def center_filament(img, n_filaments=2, percentile=85):
 
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
-@click.argument('input', type=click.Path(exists=True, dir_okay=False))
-@click.argument('output', type=click.Path(dir_okay=False), required=False)
+@click.argument('input', type=click.Path(exists=True, dir_okay=False, resolve_path=True))
+@click.argument('output', type=click.Path(dir_okay=False, resolve_path=True), required=False)
 @click.option('-f', '--overwrite', is_flag=True, help='overwrite output if exists')
 @click.option('-n', '--n-filaments', default=2, help='number of filaments on the image')
 @click.option('-p', '--percentile', default=85, help='percentile for binarisation')
