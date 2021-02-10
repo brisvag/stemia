@@ -1,1 +1,3 @@
-A collection of useful functions/tools for image processing of cryo-em data.
+# STEMA
+
+**S**cripts and **T**ools for **E**lectron **M**icroscopy **A**nalysis.
