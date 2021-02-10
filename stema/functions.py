@@ -44,7 +44,7 @@ def fourier_translate(img, shift):
 
 def label_features(img, kernel=np.ones((3, 3))):
     labeled, count = label(img, structure=kernel)
-    return labeled, range(1, count)
+    return labeled, range(1, count + 1)
 
 
 def features_by_size(img, kernel=np.ones((3, 3))):
@@ -52,8 +52,6 @@ def features_by_size(img, kernel=np.ones((3, 3))):
     by_size = []
     for lb in count:
         feature = np.where(labeled == lb, 1, 0)
-        feature_size = feature.sum()
-        by_size.append((feature_size, feature))
-    by_size.sort(reverse=True)
-    sizes, features = zip(*by_size)
-    return labeled, sizes
+        by_size.append(feature)
+    by_size.sort(reverse=True, key=lambda feature: feature.sum())
+    return labeled, by_size
