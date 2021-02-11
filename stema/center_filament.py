@@ -14,6 +14,8 @@ from .functions import (
     label_features,
     features_by_size,
     fourier_translate,
+    rotations,
+    crop_center,
 )
 
 
@@ -39,7 +41,23 @@ def center_filament(img, n_filaments=2, percentile=85):
     # translate image
     shift = center - centroid
     trans = fourier_translate(img, shift)
-    return trans
+
+    # find best rotation
+    best_rot = None
+    best_peak = -1000
+    best_angle = 0
+    for angle, img_rot in rotations(trans, range(-45, 46)):
+        rot_crop = crop_center(img_rot, 0.2, axis='y')
+        parts = np.split(rot_crop, n_filaments, axis=1)     # may break with n > 3 and non-even spacing
+        peaks = [part.sum(axis=0).max() for part in parts]
+        peak = sum(peaks)
+        peak = rot_crop.sum(axis=0).max()
+        if peak > best_peak:
+            best_rot = img_rot
+            best_angle = angle
+            best_peak = peak
+
+    return best_rot, shift, best_angle
 
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
@@ -71,7 +89,7 @@ def main(input, output, n_filaments, percentile, overwrite):
         i = 0
         for img in images:
             try:
-                centered = center_filament(img, n_filaments, percentile)
+                centered, shift, angle = center_filament(img, n_filaments, percentile)
             except IndexError:
                 failed.append(i)
                 centered = img
