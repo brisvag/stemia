@@ -1,11 +1,11 @@
-# STEMA
+# STEMIA
 
-**S**cripts and **T**ools for **E**lectron **M**icroscopy **A**nalysis.
+**S**cripts and **T**ools for **E**lectron **M**icroscopy **I**mage **A**nalysis.
 
 ## Installation
 
 ```bash
-pip install stema
+pip install stemia
 ```
 
 ## Tools

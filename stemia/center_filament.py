@@ -20,6 +20,10 @@ from .functions import (
 
 
 def center_filament(img, n_filaments=2, percentile=85):
+    """
+    center an image containing one or more filaments, and rotate it vertically
+    percentile: used for binarisation
+    """
     binarised = binarise(to_positive(img), percentile)
     labeled, by_size = features_by_size(binarised)
     threshold = by_size[n_filaments - 1].sum()
@@ -46,8 +50,8 @@ def center_filament(img, n_filaments=2, percentile=85):
     best_rot = None
     best_peak = -1000
     best_angle = 0
-    for angle, img_rot in rotations(trans, range(-45, 46)):
-        rot_crop = crop_center(img_rot, 0.2, axis='y')
+    for angle, img_rot in rotations(trans, range(-90, 91)):
+        rot_crop = crop_center(img_rot, 0.3, axis='y')
         parts = np.split(rot_crop, n_filaments, axis=1)     # may break with n > 3 and non-even spacing
         peaks = [part.sum(axis=0).max() for part in parts]
         peak = sum(peaks)
