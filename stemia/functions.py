@@ -69,3 +69,11 @@ def rotations(img, degree_range):
     """
     for angle in degree_range:
         yield angle, rotate(img, angle, reshape=False)
+
+
+def coerce_ndim(img, ndim):
+    if img.ndim > ndim:
+        raise ValueError(f'image has too high dimensionality ({img.ndim})')
+    while img.ndim < ndim:
+        np.expand_dims(img, 0)
+    return img

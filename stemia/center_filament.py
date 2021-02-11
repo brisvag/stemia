@@ -4,9 +4,9 @@ import warnings
 import numpy as np
 from scipy.spatial.distance import cdist
 from skimage.morphology import skeletonize, remove_small_objects
-import mrcfile
 import click
 
+from .utils import read_mrc, write_mrc
 
 from .functions import (
     binarise,
@@ -16,6 +16,7 @@ from .functions import (
     fourier_translate,
     rotations,
     crop_center,
+    coerce_ndim,
 )
 
 
@@ -81,32 +82,23 @@ def main(input, output, n_filaments, percentile, overwrite):
     if Path(output).is_file() and not overwrite:
         raise click.UsageError(f'{output} exists but "-f" flag was not passed')
 
-    imgs = mrcfile.open(input).data.copy()
-
-    if imgs.ndim == 2:
-        imgs = [imgs]
+    imgs = coerce_ndim(read_mrc(input), ndim=3)
 
     out = []
     failed = []
-    with click.progressbar(imgs, label='Processing image slices') as images:
-        # ugly counter to keep progressbar functionality
-        i = 0
-        for img in images:
+    with click.progressbar(enumerate(imgs), label='Processing image slices', length=len(imgs)) as images:
+        for i, img in images:
             try:
                 centered, shift, angle = center_filament(img, n_filaments, percentile)
             except IndexError:
                 failed.append(i)
                 centered = img
             out.append(centered)
-            i += 1
 
-    if len(out) == 1:
-        out_img = out[0]
-    else:
-        out_img = np.stack(out)
+    out = np.squeeze(np.stack(out))
 
     if failed:
         click.secho(f'WARNING: could not {n_filaments} filaments in the following images:\n'
                     f'{failed}\nWill leave as is!', fg='red')
 
-    mrcfile.new(output, out_img, overwrite=overwrite)
+    write_mrc(out, output, overwrite=overwrite)
