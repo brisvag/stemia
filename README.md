@@ -11,5 +11,5 @@ pip install stemia
 ## Tools
 
 ```bash
-center_filament input_stack.mrc [output.mrc]
+center_filament input_stack.mrc [output.mrc] [-s particles.star]
 ```

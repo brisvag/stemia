@@ -1,5 +1,5 @@
-click==7.1.2
-numpy==1.20.0
-scipy==1.6.0
-mrcfile==1.2.0
-scikit_image==0.18.1
+click
+numpy
+scipy
+mrcfile
+scikit_image
