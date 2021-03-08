@@ -30,9 +30,9 @@ def center_filament(img, n_filaments=2, percentile=85):
     binarised = binarise(to_positive(img), percentile)
     labeled, by_size = features_by_size(binarised)
     threshold = by_size[n_filaments - 1].sum()
-    clean = remove_small_objects(labeled, min_size=threshold)
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', category=UserWarning)
+        clean = remove_small_objects(labeled, min_size=threshold)
         skel = skeletonize(clean, method='lee')
 
     # find centroid of all the "centers" of the filaments
@@ -128,8 +128,13 @@ def main(input, output, starfile, star_output, update_by, n_filaments, percentil
     if starfile:
         click.secho('Updating particle positions...')
         x_shift, y_shift = np.stack(shifts).T
+        if optics is not None:
+            px_size = optics['rlnImagePixelSize'][0]
+            x_shift /= px_size
+            y_shift /= px_size
         df_transform = pd.DataFrame({'cf_x_shift': x_shift, 'cf_y_shift': y_shift, 'cf_rot': angles})
         df_transform.index.name = 'rlnClassNumber'
+        df_transform.index += 1
         merged = df.merge(df_transform, on='rlnClassNumber')
         df['rlnOriginXAngst'] += merged['cf_x_shift']
         df['rlnOriginYAngst'] += merged['cf_y_shift']
