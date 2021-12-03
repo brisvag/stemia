@@ -33,7 +33,6 @@ def main(particles):
     modes = [('scatter', px.scatter), ('histogram', px.histogram), ('line', px.line)]
 
     @magicgui(
-        title='CryoSparc Plotter',
         call_button='Plot',
         x={'choices': columns},
         y={'choices': columns},
