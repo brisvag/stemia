@@ -1,5 +1,17 @@
 import click
 
+ipython_banner = """
+Imports:
+- numpy as np
+- pandas as pd
+- plotly.express as px
+Variables and functions:
+- parsed data loaded into `df` (pd.DataFrame)
+- call `read_cs([file1, file2])` to read more data
+- call `plot_df(dataframe)` on a dataframe to open the plotting widget
+- call `dataframe.to_csv(...) on a dataframe to save it as csv`
+"""
+
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
 @click.argument('cs_file', type=click.Path(exists=True, dir_okay=False, resolve_path=True), nargs=-1)
@@ -52,47 +64,43 @@ def main(cs_file):
         # merge everything based on unique id
         return reduce(lambda left, right: pd.merge(left, right, on='uid'), dfs)
 
-    df = read_cs(*cs_file)
-
-    columns = ['index'] + df.columns.tolist()
     modes = [('scatter', px.scatter), ('histogram', px.histogram), ('line', px.line)]
     histfuncs = ['count', 'sum', 'avg', 'min', 'max']
 
     @magic_factory(
         main_window=True,
         call_button='Plot',
-        x={'choices': columns},
-        y={'choices': [None] + columns},
-        color={'choices': [None] + columns},
-        histfunc={'choices': histfuncs},
+        x={'widget_type': 'ComboBox'},
+        y={'widget_type': 'ComboBox'},
+        color={'widget_type': 'ComboBox'},
         mode={'choices': modes},
+        histfunc={'choices': histfuncs},
     )
-    def plot_widget(dataframe, x, y, color, histfunc, mode):
-        kwargs = dict(data_frame=df, x=x, y=y, color=color)
+    def plot_widget(dataframe, x, y, color, mode, histfunc):
+        if x == 'index':
+            x = dataframe.index
+        if y == 'index':
+            y = dataframe.index
+        kwargs = dict(data_frame=dataframe, x=x, y=y, color=color)
         if mode is px.histogram:
             kwargs['histfunc'] = histfunc
         mode(**kwargs).show()
 
     def plot_df(dataframe):
         pw = plot_widget()
+        # set new dataframe as source and regenerate choices?
         pw.dataframe.value = dataframe
+        columns = ['index'] + df.columns.tolist()
+        pw.x.choices = columns
+        pw.y.choices = [None] + columns
+        pw.color.choices = [None] + columns
         pw.show()
 
+    df = read_cs(*cs_file)
     plot_df(df)
 
-    banner = f"""
-Imports:
-- numpy as np
-- pandas as pd
-- plotly.express as px
-Variables and functions:
-- parsed data loaded into `df` (pd.DataFrame)
-- call `read_cs([file1, file2])` to read more data
-- call `plot_df(dataframe)` on a dataframe to open the plotting widget
-
-{df}
-"""
-
-    sh = InteractiveShellEmbed(banner1=banner)
+    sh = InteractiveShellEmbed(banner1=ipython_banner)
     sh.enable_gui('qt')
+    sh.push('df')
+    sh.run_cell('df')
     sh()
