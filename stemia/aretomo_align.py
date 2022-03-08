@@ -91,16 +91,17 @@ def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
             # find any images removed by aretomo cause too dark (should not happen with normalization)
             to_skip = []
             for line in proc.stdout.decode().split('\n'):
-                if match := re.search(r'Remove image at (\S+) degree', line):
-                    to_skip.append(match.group(1))
+                if match := re.search(r'Remove image at (\S+) degree: .*', line):
+                    to_skip.append(match)
 
             if to_skip:
                 warp_dir = ts_list[0].parent.parent
                 log = ts_dir / 'aretomo_align.log'
-                skipped = "\n".join([angle for angle in to_skip])
-                log.write_text(f'Some images were too dark and were skipped by AreTomo:\n{skipped}')
+                skipped = "\n".join([match.group() for match in to_skip])
+                log.write_text(f'Some images were too dark and were skipped by AreTomo:\n{skipped}\n')
                 # flag as disabled in warp
-                for angle in to_skip:
+                for match in to_skip:
+                    angle = match.group(1)
                     glob = f'{ts_dir.stem}_*_{angle}.xml'
                     xml = list(warp_dir.glob(glob))
                     if len(xml) != 1:
