@@ -37,7 +37,7 @@ def run_fix(ts_list, overwrite, in_ext, ccderaser):
 
             # run ccderaser, defaults from etomo
             ccderaser_cmd = f'{ccderaser} -input {input} -output {output} -find -peak 8.0 -diff 6.0 -big 19. -giant 12. -large 8. -grow 4. -edge 4'
-            subprocess.run(ccderaser_cmd.split(), capture_output=True, check=True, cwd=ts_dir)
+            subprocess.run(ccderaser_cmd.split(), capture_output=True, check=True)
 
 
 def run_normalize(ts_list, overwrite, in_ext):
@@ -69,17 +69,24 @@ def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
             ts_name = ts_dir / ts_dir.stem
             input = f'{ts_name}{in_ext}'
             aligned = f'{ts_name}_aligned.mrc'
-            tilt = f'{ts_name}.mrc.rawtlt'
-            xf = f'{ts_name}.xf'
-            xf_warp = f'{ts_name}.mrc.xf'  # needs to be like this for warp to see it
+            rawtilt = f'{ts_name}.mrc.rawtlt'
 
             # run aretomo with basic settings
             tilt_axis_opt = f'-TiltAxis {tilt_axis}' if tilt_axis is not None else ''
-            aretomo_cmd = f'{aretomo} -InMrc {input} -OutMrc {aligned} -AngFile {tilt} -OutXF 1 {tilt_axis_opt} -TiltCor 1 -Gpu {gpus[0]} -VolZ 0'
-            proc = subprocess.run(aretomo_cmd.split(), capture_output=True, check=True, cwd=ts_dir)
+            aretomo_cmd = f'{aretomo} -InMrc {input} -OutMrc {aligned} -AngFile {rawtilt} -OutXF 1 {tilt_axis_opt} -TiltCor 1 -Gpu {gpus[0]} -VolZ 0'
+            proc = subprocess.run(aretomo_cmd.split(), capture_output=True, check=True)
 
-            # rename so warp sees it
-            Path(xf).rename(xf_warp)
+            # aretomo is somehow circumventing the `cwd` argument of subprocess.run and dumping everything in the PARENT
+            # of the actual cwd. Could not solve, no clue why this happens. So we have to do things differently
+            # and move the output around a bit
+            imod_dir = ts_dir.parent
+            tlt = imod_dir / f'{ts_dir.stem}.aln'
+            aln = imod_dir / f'{ts_dir.stem}.tlt'
+            xf = imod_dir / f'{ts_dir.stem}.xf'
+            xf_warp = f'{ts_name}.mrc.xf'  # needs to be renamed for warp to see it
+            shutil.move(tlt, ts_dir)
+            shutil.move(aln, ts_dir)
+            shutil.move(xf, xf_warp)
 
             # find any images removed by aretomo cause too dark (should not happen with normalization)
             to_skip = []
@@ -134,7 +141,7 @@ def main(warp_dir, dry_run, ccderaser, aretomo, tilt_axis, overwrite, fix, norm,
     if not imod_dir.exists():
         raise click.UsageError('warp directory does not have an `imod` subdirectory')
 
-    ts_list = sorted(list(imod_dir.iterdir()))
+    ts_list = sorted([dir for dir in imod_dir.glob('*.mrc') if dir.is_dir()])
     if dry_run:
         newline = '\n'
         click.secho(cleandoc(f'''
