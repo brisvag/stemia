@@ -50,7 +50,7 @@ def main(warp_dir, dry_run, ccderaser, aretomo, tilt_axis, overwrite):
             if file.exists() and not overwrite:
                 raise FileExistsError(f'{file} already exists; use -f/--overwrite to overwrite any existing files')
 
-    with click.progressbar(ts_list, label='Fixing...', item_show_func=lambda x: str(x.stem if x is not None else '')) as bar:
+    with click.progressbar(ts_list, label='Fixing...     ', item_show_func=lambda x: str(x.stem if x is not None else '')) as bar:
         for ts_dir in bar:
             ts_name = ts_dir / ts_dir.stem
             raw = f'{ts_name}.mrc.st'
@@ -73,7 +73,7 @@ def main(warp_dir, dry_run, ccderaser, aretomo, tilt_axis, overwrite):
                 mrc_norm.set_data((mrc.data - mrc.data.mean()) / mrc.data.std())
 
     warn = []
-    with click.progressbar(ts_list, label='Aligning...', item_show_func=lambda x: str(x.stem if x is not None else '')) as bar:
+    with click.progressbar(ts_list, label='Aligning...   ', item_show_func=lambda x: str(x.stem if x is not None else '')) as bar:
         for ts_dir in bar:
             normalized = f'{ts_name}_norm.mrc'
             aligned = f'{ts_name}_aligned.mrc'
