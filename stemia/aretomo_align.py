@@ -163,4 +163,4 @@ def main(warp_dir, dry_run, ccderaser, aretomo, tilt_axis, overwrite, fix, norm,
         input_ext = '_norm.mrc'
 
     if align:
-        run_align(ts_list, overwrite, input_ext, aretomo, tilt_axis, warp_dir)
+        run_align(ts_list, overwrite, input_ext, aretomo, tilt_axis)
