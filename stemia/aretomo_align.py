@@ -102,7 +102,7 @@ def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
                 # flag as disabled in warp
                 for match in to_skip:
                     angle = match.group(1)
-                    glob = f'{ts_dir.stem}_*_{angle}.xml'
+                    glob = f'{ts_dir.stem}_*_{float(angle):.1f}.xml'
                     xml = list(warp_dir.glob(glob))
                     if len(xml) != 1:
                         warn.append(ts_name)
@@ -115,7 +115,7 @@ def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
 
     if warn:
         click.secho(f'WARNING: somehow found the wrong number of xml files in {warp_dir}')
-        click.secho(f'Check the log and manually disable tilts in Warp for: {", ".join(warn)}.')
+        click.secho(f'Check the log and manually disable tilts in Warp for: {", ".join(str(ts)) for ts in warn}.')
 
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
