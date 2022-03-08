@@ -144,9 +144,8 @@ def main(warp_dir, dry_run, ccderaser, aretomo, tilt_axis, overwrite, fix, norm,
         '''))
         click.get_current_context().exit()
 
-    if startfrom == 'raw':
-        input_ext = '.mrc.st'
-    elif startfrom == 'fix':
+    input_ext = '.mrc.st'
+    if startfrom == 'fix':
         input_ext = '_fixed.mrc'
         fix = False
     elif startfrom == 'norm':
