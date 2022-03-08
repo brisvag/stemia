@@ -64,6 +64,7 @@ def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
     if not overwrite:
         check_outputs_exist(ts_list, ('_aligned.mrc', 'mrc.xf'))
     warn = []
+    skipped = False
     with click.progressbar(ts_list, label='Aligning...   ', item_show_func=get_stem) as bar:
         for ts_dir in bar:
             ts_name = ts_dir / ts_dir.stem
@@ -95,6 +96,7 @@ def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
                     to_skip.append(match)
 
             if to_skip:
+                skipped = True
                 warp_dir = ts_list[0].parent.parent
                 log = ts_dir / 'aretomo_align.log'
                 skipped = "\n".join([match.group() for match in to_skip])
@@ -110,12 +112,14 @@ def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
                     xml = xml[0]
                     content = xml.read_text()
                     replaced = content.replace('UnselectManual="null"', 'UnselectManual="True"')
-                    click.secho(f'doing stuff with {xml}')
                     xml.write_text(replaced)
 
     if warn:
         click.secho(f'WARNING: somehow found the wrong number of xml files in {warp_dir}')
         click.secho(f'Check the log and manually disable tilts in Warp for: {", ".join(str(ts)) for ts in warn}.')
+    elif skipped:
+        click.secho('WARNING: some images were too dark and were skipped by aretomo.')
+        click.secho('Warp xml files were automatically updated to reflect these changes by skipping some images!')
 
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
