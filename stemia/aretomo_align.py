@@ -44,32 +44,42 @@ def main(warp_dir, dry_run, ccderaser, aretomo, tilt_axis, overwrite):
         '''))
         click.get_current_context().exit()
 
-    warn = []
-    with click.progressbar(ts_list, item_show_func=lambda x: str(x)) as bar:
+    def check_output_exists(ts_name):
+        for ts_dir in ts_list:
+            file = Path(f'{ts_dir / ts_dir.stem}.mrc.xf')
+            if file.exists() and not overwrite:
+                raise FileExistsError(f'{file} already exists; use -f/--overwrite to overwrite any existing files')
+
+    with click.progressbar(ts_list, label='Fixing...', item_show_func=lambda x: str(x.stem if x is not None else '')) as bar:
         for ts_dir in bar:
             ts_name = ts_dir / ts_dir.stem
             raw = f'{ts_name}.mrc.st'
-            tilt = f'{ts_name}.mrc.rawtlt'
             fixed = f'{ts_name}_fixed.mrc'
-            normalized = f'{ts_name}_norm.mrc'
-            aligned = f'{ts_name}_aligned.mrc'
-            xf = f'{ts_name}.xf'
-            xf_warp = f'{ts_name}.mrc.xf'  # needs to be like this for warp to see it
-
-            for file in (fixed, normalized, aligned, xf):
-                if Path(file).exists() and not overwrite:
-                    raise FileExistsError(f'{file} already exists; use -f/--overwrite to overwrite any existing files')
 
             # run ccderaser, defaults from etomo
             ccderaser_cmd = f'{ccderaser} -input {raw} -output {fixed} -find -peak 8.0 -diff 6.0 -big 19. -giant 12. -large 8. -grow 4. -edge 4'
-            subprocess.run(ccderaser_cmd.split(), check=True)
+            subprocess.run(ccderaser_cmd.split(), capture_output=True, check=True,)
+
+    with click.progressbar(ts_list, label='Normalizing...', item_show_func=lambda x: str(x.stem if x is not None else '')) as bar:
+        for ts_dir in bar:
+            fixed = f'{ts_name}_fixed.mrc'
+            normalized = f'{ts_name}_norm.mrc'
 
             # normalize to mean 0 and stdev 1
             with (
                 mrcfile.open(fixed) as mrc,
-                mrcfile.new(normalized) as mrc_norm
+                mrcfile.new(normalized, overwrite=overwrite) as mrc_norm
             ):
                 mrc_norm.set_data((mrc.data - mrc.data.mean()) / mrc.data.std())
+
+    warn = []
+    with click.progressbar(ts_list, label='Aligning...', item_show_func=lambda x: str(x.stem if x is not None else '')) as bar:
+        for ts_dir in bar:
+            normalized = f'{ts_name}_norm.mrc'
+            aligned = f'{ts_name}_aligned.mrc'
+            tilt = f'{ts_name}.mrc.rawtlt'
+            xf = f'{ts_name}.xf'
+            xf_warp = f'{ts_name}.mrc.xf'  # needs to be like this for warp to see it
 
             # run aretomo with basic settings
             tilt_axis_opt = f'-TiltAxis {tilt_axis}' if tilt_axis is not None else ''
