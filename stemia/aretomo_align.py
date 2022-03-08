@@ -116,11 +116,13 @@ def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
 @click.option('-t', '--tilt-axis', type=float, help='starting tilt axis for AreTomo, if any')
 @click.option('-f', '--overwrite', is_flag=True, help='overwrite any previous existing run')
 @click.option('--fix/--nofix', default=True, help='run ccderaser to fix the stack')
-@click.option('--norm/--nonorm', default=True, help='run ccderaser to fix the stack')
-@click.option('--align/--noalign', default=True, help='run ccderaser to fix the stack')
+@click.option('--norm/--nonorm', default=True, help='use mrcfile to normalize the images')
+@click.option('--align/--noalign', default=True, help='run aretomo to produce an alignment')
+@click.option('--startfrom', type=click.Choice(('raw', 'fix', 'norm')), default='fix',
+              help='use outputs from a previous run starting from this step')
 @click.option('--ccderaser', type=str, default='ccderaser', help='command for ccderaser')
 @click.option('--aretomo', type=str, default='AreTomo', help='command for aretomo')
-def main(warp_dir, dry_run, ccderaser, aretomo, tilt_axis, overwrite, fix, norm, align):
+def main(warp_dir, dry_run, ccderaser, aretomo, tilt_axis, overwrite, fix, norm, align, startfrom):
     """
     run aretomo on a warp directory (after imod stacks were generated).
     Requires ccderaser and AreTomo.
@@ -142,7 +144,16 @@ def main(warp_dir, dry_run, ccderaser, aretomo, tilt_axis, overwrite, fix, norm,
         '''))
         click.get_current_context().exit()
 
-    input_ext = '.mrc.st'
+    if startfrom == 'raw':
+        input_ext = '.mrc.st'
+    elif startfrom == 'fix':
+        input_ext = '_fixed.mrc'
+        fix = False
+    elif startfrom == 'norm':
+        input_ext == '_norm.mrc'
+        fix = False
+        norm = False
+
     if fix:
         run_fix(ts_list, overwrite, input_ext, ccderaser)
         input_ext = '_fixed.mrc'
@@ -153,5 +164,3 @@ def main(warp_dir, dry_run, ccderaser, aretomo, tilt_axis, overwrite, fix, norm,
 
     if align:
         run_align(ts_list, overwrite, input_ext, aretomo, tilt_axis, warp_dir)
-
-    click.secho('Done! Results are in the respective imod directories.')
