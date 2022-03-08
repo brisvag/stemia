@@ -8,24 +8,28 @@ from inspect import cleandoc
 import mrcfile
 
 
-def check_outputs_exist(root, names, ext):
+def check_outputs_exist(dirs, ext):
     if not isinstance(ext, tuple):
         ext = (ext,)
-    for ts in names:
-        dir = root / f'{ts}.mrc'
+    for dir in dirs:
         for ex in ext:
-            file = dir / f'{ts}{ext}'
+            file = dir / f'{dir.stem}{ext}'
             if file.exists():
                 raise FileExistsError(f'{file} already exists; use -f/--overwrite to overwrite any existing files')
 
 
-def run_fix(imod_dir, ts_list, overwrite, in_ext, ccderaser):
+def get_stem(path):
+    if path is not None:
+        return path.stem
+    return ''
+
+
+def run_fix(ts_list, overwrite, in_ext, ccderaser):
     if not shutil.which(ccderaser):
         raise click.UsageError('ccderaser is not available on the system')
-
     if not overwrite:
-        check_outputs_exist(imod_dir, ts_list, '_fixed.mrc')
-    with click.progressbar(ts_list, label='Fixing...     ', item_show_func=str) as bar:
+        check_outputs_exist(ts_list, '_fixed.mrc')
+    with click.progressbar(ts_list, label='Fixing...     ', item_show_func=get_stem) as bar:
         for ts_dir in bar:
             ts_name = ts_dir / ts_dir.stem
             input = f'{ts_name}{in_ext}'
@@ -36,10 +40,10 @@ def run_fix(imod_dir, ts_list, overwrite, in_ext, ccderaser):
             subprocess.run(ccderaser_cmd.split(), capture_output=True, check=True)
 
 
-def run_normalize(imod_dir, ts_list, overwrite, in_ext):
+def run_normalize(ts_list, overwrite, in_ext):
     if not overwrite:
-        check_outputs_exist(imod_dir, ts_list, '_norm.mrc')
-    with click.progressbar(ts_list, label='Normalizing...', item_show_func=str) as bar:
+        check_outputs_exist(ts_list, '_norm.mrc')
+    with click.progressbar(ts_list, label='Normalizing...', item_show_func=get_stem) as bar:
         for ts_dir in bar:
             ts_name = ts_dir / ts_dir.stem
             input = f'{ts_name}{in_ext}'
@@ -53,13 +57,14 @@ def run_normalize(imod_dir, ts_list, overwrite, in_ext):
                 mrc_norm.set_data((mrc.data - mrc.data.mean()) / mrc.data.std())
 
 
-def run_align(imod_dir, ts_list, overwrite, in_ext, aretomo, tilt_axis, warp_dir):
+def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
     gpus = [gpu.id for gpu in GPUtil.getGPUs()]
     if not gpus:
         raise click.UsageError('you need at least one GPU to run AreTomo')
-
+    if not overwrite:
+        check_outputs_exist(ts_list, ('_aligned.mrc', 'mrc.xf'))
     warn = []
-    with click.progressbar(ts_list, label='Aligning...   ', item_show_func=str) as bar:
+    with click.progressbar(ts_list, label='Aligning...   ', item_show_func=get_stem) as bar:
         for ts_dir in bar:
             ts_name = ts_dir / ts_dir.stem
             input = f'{ts_name}{in_ext}'
@@ -83,6 +88,7 @@ def run_align(imod_dir, ts_list, overwrite, in_ext, aretomo, tilt_axis, warp_dir
                     to_skip.append(match.group(1))
 
             if to_skip:
+                warp_dir = ts_list[0].parent.parent
                 log = ts_dir / 'aretomo_align.log'
                 skipped = "\n".join([angle for angle in to_skip])
                 log.write_text(f'Some images were too dark and were skipped by AreTomo:\n{skipped}')
@@ -126,26 +132,26 @@ def main(warp_dir, dry_run, ccderaser, aretomo, tilt_axis, overwrite, fix, norm,
     if not imod_dir.exists():
         raise click.UsageError('warp directory does not have an `imod` subdirectory')
 
-    ts_list = sorted([ts.stem for ts in imod_dir.iterdir()])
+    ts_list = sorted(list(imod_dir.iterdir()))
     if dry_run:
         newline = '\n'
         click.secho(cleandoc(f'''
             Warp directory:
                 - {warp_dir}
-            Tilt series found:{''.join(f'{newline}{" " * 16}- {ts}' for ts in ts_list)}
+            Tilt series found:{''.join(f'{newline}{" " * 16}- {ts.stem}' for ts in ts_list)}
         '''))
         click.get_current_context().exit()
 
     input_ext = '.mrc.st'
     if fix:
-        run_fix(imod_dir, ts_list, overwrite, input_ext, ccderaser)
+        run_fix(ts_list, overwrite, input_ext, ccderaser)
         input_ext = '_fixed.mrc'
 
     if norm:
-        run_normalize(imod_dir, ts_list, overwrite, input_ext)
+        run_normalize(ts_list, overwrite, input_ext)
         input_ext = '_norm.mrc'
 
     if align:
-        run_align(imod_dir, ts_list, overwrite, input_ext, aretomo, tilt_axis, warp_dir)
+        run_align(ts_list, overwrite, input_ext, aretomo, tilt_axis, warp_dir)
 
     click.secho('Done! Results are in the respective imod directories.')
