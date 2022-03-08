@@ -101,7 +101,7 @@ def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
                 log.write_text(f'Some images were too dark and were skipped by AreTomo:\n{skipped}')
                 # flag as disabled in warp
                 for angle in to_skip:
-                    glob = f'{ts_name}_*_{angle}.xml'
+                    glob = f'{ts_dir.stem}_*_{angle}.xml'
                     xml = list(warp_dir.glob(glob))
                     if len(xml) != 1:
                         warn.append(ts_name)
