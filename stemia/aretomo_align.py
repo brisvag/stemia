@@ -37,7 +37,7 @@ def run_fix(ts_list, overwrite, in_ext, ccderaser):
 
             # run ccderaser, defaults from etomo
             ccderaser_cmd = f'{ccderaser} -input {input} -output {output} -find -peak 8.0 -diff 6.0 -big 19. -giant 12. -large 8. -grow 4. -edge 4'
-            subprocess.run(ccderaser_cmd.split(), capture_output=True, check=True)
+            subprocess.run(ccderaser_cmd.split(), capture_output=True, check=True, cwd=ts_dir)
 
 
 def run_normalize(ts_list, overwrite, in_ext):
@@ -76,7 +76,7 @@ def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
             # run aretomo with basic settings
             tilt_axis_opt = f'-TiltAxis {tilt_axis}' if tilt_axis is not None else ''
             aretomo_cmd = f'{aretomo} -InMrc {input} -OutMrc {aligned} -AngFile {tilt} -OutXF 1 {tilt_axis_opt} -TiltCor 1 -Gpu {gpus[0]} -VolZ 0'
-            proc = subprocess.run(aretomo_cmd.split(), capture_output=True, check=True)
+            proc = subprocess.run(aretomo_cmd.split(), capture_output=True, check=True, cwd=ts_dir)
 
             # rename so warp sees it
             Path(xf).rename(xf_warp)
