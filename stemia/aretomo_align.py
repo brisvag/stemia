@@ -110,9 +110,9 @@ def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
                         warn.append(ts_name)
                         continue
                     xml = xml[0]
-                    content = xml.read_text()
+                    content = xml.read_text(encoding='utf16')  # warp...
                     replaced = content.replace('UnselectManual="null"', 'UnselectManual="True"')
-                    xml.write_text(replaced)
+                    xml.write_text(replaced, encoding='utf16')
 
     if warn:
         click.secho(f'WARNING: somehow found the wrong number of xml files in {warp_dir}')
