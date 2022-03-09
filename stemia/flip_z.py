@@ -1,8 +1,3 @@
-from pathlib import Path
-
-import starfile
-import mrcfile
-import eulerangles
 import click
 
 
@@ -11,6 +6,7 @@ def flip_positions(z_values, z_shape):
 
 
 def flip_eulers(angles):
+    import eulerangles
     mat = eulerangles.euler2matrix(angles, axes='zyz', intrinsic=True, right_handed_rotation=True)
     mat[:, :, -1] *= -1
     flipped = eulerangles.matrix2euler(mat, axes='zyz', intrinsic=True, right_handed_rotation=True)
@@ -29,6 +25,10 @@ def cli(star_path, *, output=None, mrc_path=None, star_pixel_size=None, mrc_pixe
     STAR_PATH: star file to flip along z
     assume all micrographs have the same shape
     """
+    import starfile
+    import mrcfile
+    from pathlib import Path
+
     if mrc_path is None:
         if mrc_pixel_size is None or z_shape is None:
             raise click.UsageError('must provide either mrc_path or both mrc_pixel_size and z_shape')

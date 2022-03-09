@@ -1,8 +1,4 @@
-from pathlib import Path
-
-from scipy.ndimage import zoom
 import click
-import mrcfile
 
 
 @click.command()
@@ -17,6 +13,10 @@ def cli(input, output, target_pixel_size, input_pixel_size, overwrite):
 
     TARGET_PIXEL_SIZE: target pixel size in Angstrom
     """
+    from scipy.ndimage import zoom
+    from pathlib import Path
+    import mrcfile
+
     if Path(output).is_file() and not overwrite:
         raise click.UsageError(f'{output} exists but "-f" flag was not passed')
     mrc = mrcfile.open(input)

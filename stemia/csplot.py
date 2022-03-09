@@ -1,17 +1,5 @@
 import click
 
-ipython_banner = """
-Imports:
-- numpy as np
-- pandas as pd
-- plotly.express as px
-Variables and functions:
-- parsed data loaded into `df` (pd.DataFrame)
-- call `read_cs([file1, file2])` to read more data
-- call `plot_df(dataframe)` on a dataframe to open the plotting widget
-- call `dataframe.to_csv(...) on a dataframe to save it as csv`
-"""
-
 
 @click.command()
 @click.argument('cs_file', type=click.Path(exists=True, dir_okay=False, resolve_path=True), nargs=-1)
@@ -22,6 +10,7 @@ def cli(cs_file):
     Provided files must be compatible (have the same uid column!)
     """
     from functools import reduce
+    from inspect import cleandoc
     import numpy as np
     import pandas as pd
     import plotly.express as px
@@ -98,6 +87,18 @@ def cli(cs_file):
 
     df = read_cs(*cs_file)
     plot_df(df)
+
+    ipython_banner = cleandoc("""
+        Imports:
+        - numpy as np
+        - pandas as pd
+        - plotly.express as px
+        Variables and functions:
+        - parsed data loaded into `df` (pd.DataFrame)
+        - call `read_cs([file1, file2])` to read more data
+        - call `plot_df(dataframe)` on a dataframe to open the plotting widget
+        - call `dataframe.to_csv(...) on a dataframe to save it as csv`
+    """)
 
     sh = InteractiveShellEmbed(banner1=ipython_banner)
     sh.enable_gui('qt')
