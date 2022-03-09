@@ -24,7 +24,7 @@ def flip_eulers(angles):
 @click.option('--star_pixel_size', type=float)
 @click.option('--mrc_pixel_size', type=float)
 @click.option('--z_shape', type=int)
-def main(star_path, *, output=None, mrc_path=None, star_pixel_size=None, mrc_pixel_size=None, z_shape=None):
+def cli(star_path, *, output=None, mrc_path=None, star_pixel_size=None, mrc_pixel_size=None, z_shape=None):
     """
     STAR_PATH: star file to flip along z
     assume all micrographs have the same shape

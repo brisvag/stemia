@@ -5,13 +5,13 @@ import click
 import mrcfile
 
 
-@click.command(context_settings=dict(help_option_names=['-h', '--help']))
+@click.command()
 @click.argument('input', type=click.Path(exists=True, dir_okay=False, resolve_path=True))
 @click.argument('output', type=click.Path(dir_okay=False, resolve_path=True))
 @click.argument('target_pixel_size', type=float)
 @click.option('--input-pixel-size', type=float, help='force input pizel size and ignore mrc header')
 @click.option('-f', '--overwrite', is_flag=True, help='overwrite output if exists')
-def main(input, output, target_pixel_size, input_pixel_size, overwrite):
+def cli(input, output, target_pixel_size, input_pixel_size, overwrite):
     """
     Rescale an mrc image to the specified pixel size.
 

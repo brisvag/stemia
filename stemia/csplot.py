@@ -13,9 +13,9 @@ Variables and functions:
 """
 
 
-@click.command(context_settings=dict(help_option_names=['-h', '--help']))
+@click.command()
 @click.argument('cs_file', type=click.Path(exists=True, dir_okay=False, resolve_path=True), nargs=-1)
-def main(cs_file):
+def cli(cs_file):
     """
     read a cryosparc file (plus any number of passthrough files) into a pandas dataframe
     and provide a simple interface for plotting columns.

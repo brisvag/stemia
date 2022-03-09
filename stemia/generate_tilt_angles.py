@@ -1,7 +1,7 @@
 import click
 
 
-@click.command(context_settings=dict(help_option_names=['-h', '--help']))
+@click.command()
 @click.argument('star_file', type=click.Path(exists=True, dir_okay=False, resolve_path=True))
 @click.argument('tilt_angle', type=float)
 @click.argument('tilt_axis', type=float)
@@ -9,7 +9,7 @@ import click
 @click.option('-o', '--star-output', type=click.Path(dir_okay=False, resolve_path=True),
               help='where to put the updated version of the star file [default: <STAR_FILE>_tilted.star]')
 @click.option('-f', '--overwrite', is_flag=True, help='overwrite output if exists')
-def main(star_file, tilt_angle, tilt_axis, radians, star_output, overwrite):
+def cli(star_file, tilt_angle, tilt_axis, radians, star_output, overwrite):
     """
     Read a Relion STAR_FILE with in-plane angles and generate priors
     for rot and tilt angles based on a TILT_ANGLE around a TILT_AXIS.

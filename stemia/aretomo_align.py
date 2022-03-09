@@ -122,7 +122,7 @@ def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
         click.secho('Warp xml files were automatically updated to reflect these changes by skipping some images!')
 
 
-@click.command(context_settings=dict(help_option_names=['-h', '--help']))
+@click.command()
 @click.argument('warp_dir', type=click.Path(exists=True, dir_okay=True, resolve_path=True), default='.')
 @click.option('-d', '--dry-run', is_flag=True, help='only print some info, without running the commands')
 @click.option('-t', '--tilt-axis', type=float, help='starting tilt axis for AreTomo, if any')
@@ -134,7 +134,7 @@ def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
               help='use outputs from a previous run starting from this step')
 @click.option('--ccderaser', type=str, default='ccderaser', help='command for ccderaser')
 @click.option('--aretomo', type=str, default='AreTomo', help='command for aretomo')
-def main(warp_dir, dry_run, ccderaser, aretomo, tilt_axis, overwrite, fix, norm, align, startfrom):
+def cli(warp_dir, dry_run, ccderaser, aretomo, tilt_axis, overwrite, fix, norm, align, startfrom):
     """
     run aretomo on a warp directory (after imod stacks were generated).
     Requires ccderaser and AreTomo.

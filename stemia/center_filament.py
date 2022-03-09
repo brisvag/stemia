@@ -70,7 +70,7 @@ def center_filament(img, n_filaments=2, percentile=85):
     return best_rot, shift, best_angle
 
 
-@click.command(context_settings=dict(help_option_names=['-h', '--help']))
+@click.command()
 @click.argument('input', type=click.Path(exists=True, dir_okay=False, resolve_path=True))
 @click.argument('output', type=click.Path(dir_okay=False, resolve_path=True), required=False)
 @click.option('-s', '--update-star', 'starfile', type=click.Path(exists=True, dir_okay=False, resolve_path=True),
@@ -82,7 +82,7 @@ def center_filament(img, n_filaments=2, percentile=85):
 @click.option('-f', '--overwrite', is_flag=True, help='overwrite output if exists')
 @click.option('-n', '--n-filaments', default=2, help='number of filaments on the image', show_default=True)
 @click.option('-p', '--percentile', default=85, help='percentile for binarisation', show_default=True)
-def main(input, output, starfile, star_output, update_by, n_filaments, percentile, overwrite):
+def cli(input, output, starfile, star_output, update_by, n_filaments, percentile, overwrite):
     """
     Center an mrc image containing filament(s). Can update particles in a RELION .star file accordingly.
 
