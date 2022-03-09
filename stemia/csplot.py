@@ -5,9 +5,13 @@ import click
 @click.argument('cs_file', type=click.Path(exists=True, dir_okay=False, resolve_path=True), nargs=-1)
 def cli(cs_file):
     """
-    read a cryosparc file (plus any number of passthrough files) into a pandas dataframe
-    and provide a simple interface for plotting columns.
-    Provided files must be compatible (have the same uid column!)
+    Read cryosparc file(s) and plot interactively any column.
+
+    An interactive ipython shell will be opened with data loaded
+    into a pandas dataframe.
+
+    CS_FILE:
+        a .cs file followed by any number of passthrough files
     """
     from functools import reduce
     from inspect import cleandoc

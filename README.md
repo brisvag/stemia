@@ -19,10 +19,11 @@ Everything is accessible through the main command line interface `stemia`. Try `
 ```
 Usage: stemia aretomo_align [OPTIONS] [WARP_DIR]
 
-  run aretomo on a warp directory (after imod stacks were generated).
-  Requires ccderaser and AreTomo.
+  Run aretomo in batch on data preprocessed in warp.
 
-  Assumes the default Warp directory structure with generated imod stacks
+  Needs to be ran after imod stacks were generated. Requires ccderaser and
+  AreTomo. Assumes the default Warp directory structure with generated imod
+  stacks. Some warp xml files may be updated to disable too dark images.
 
 Options:
   -d, --dry-run               only print some info, without running the
@@ -46,10 +47,10 @@ Options:
 ```
 Usage: stemia center_filament [OPTIONS] INPUT [OUTPUT]
 
-  Center an mrc image containing filament(s). Can update particles in a
-  RELION .star file accordingly.
+  Center an mrc image (stack) containing filament(s).
 
-  If OUTPUT is not given, default to INPUT_centered.mrc
+  Can update particles in a RELION .star file accordingly. If OUTPUT is not
+  given, default to INPUT_centered.mrc
 
 Options:
   -s, --update-star FILE        a RELION .star file to update with new
@@ -74,9 +75,12 @@ Options:
 ```
 Usage: stemia csplot [OPTIONS] [CS_FILE]...
 
-  read a cryosparc file (plus any number of passthrough files) into a pandas
-  dataframe and provide a simple interface for plotting columns. Provided
-  files must be compatible (have the same uid column!)
+  Read cryosparc file(s) and plot interactively any column.
+
+  An interactive ipython shell will be opened with data loaded into a pandas
+  dataframe.
+
+  CS_FILE:     a .cs file followed by any number of passthrough files
 
 Options:
   --help  Show this message and exit.
@@ -87,8 +91,11 @@ Options:
 ```
 Usage: stemia flip_z [OPTIONS] STAR_PATH
 
-  STAR_PATH: star file to flip along z assume all micrographs have the same
-  shape
+  Flip the z axis for particles in a RELION star file.
+
+  STAR_PATH: star file to flip along z
+
+  Assumes all tomograms have the same shape.
 
 Options:
   -o, --output FILE
@@ -104,6 +111,8 @@ Options:
 ```
 Usage: stemia generate_tilt_angles [OPTIONS] STAR_FILE TILT_ANGLE TILT_AXIS
 
+  Generate angle priors for a tilted dataset.
+
   Read a Relion STAR_FILE with in-plane angles and generate priors for rot
   and tilt angles based on a TILT_ANGLE around a TILT_AXIS.
 
@@ -114,6 +123,17 @@ Options:
 
   -f, --overwrite         overwrite output if exists
   --help                  Show this message and exit.
+```
+
+### parse_warp_xml
+
+```
+Usage: stemia parse_warp_xml [OPTIONS] XML_FILE
+
+  Parse a warp xml file and print its content.
+
+Options:
+  --help  Show this message and exit.
 ```
 
 ### rescale

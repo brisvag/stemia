@@ -22,8 +22,11 @@ def flip_eulers(angles):
 @click.option('--z_shape', type=int)
 def cli(star_path, *, output=None, mrc_path=None, star_pixel_size=None, mrc_pixel_size=None, z_shape=None):
     """
+    Flip the z axis for particles in a RELION star file.
+
     STAR_PATH: star file to flip along z
-    assume all micrographs have the same shape
+
+    Assumes all tomograms have the same shape.
     """
     import starfile
     import mrcfile

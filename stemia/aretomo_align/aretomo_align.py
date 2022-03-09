@@ -17,10 +17,11 @@ from inspect import cleandoc
 @click.option('--aretomo', type=str, default='AreTomo', help='command for aretomo')
 def cli(warp_dir, dry_run, ccderaser, aretomo, tilt_axis, overwrite, fix, norm, align, startfrom):
     """
-    run aretomo on a warp directory (after imod stacks were generated).
-    Requires ccderaser and AreTomo.
+    Run aretomo in batch on data preprocessed in warp.
 
-    Assumes the default Warp directory structure with generated imod stacks
+    Needs to be ran after imod stacks were generated. Requires ccderaser and AreTomo.
+    Assumes the default Warp directory structure with generated imod stacks. Some warp xml
+    files may be updated to disable too dark images.
     """
     warp_dir = Path(warp_dir)
     imod_dir = warp_dir / 'imod'

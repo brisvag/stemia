@@ -11,6 +11,8 @@ import click
 @click.option('-f', '--overwrite', is_flag=True, help='overwrite output if exists')
 def cli(star_file, tilt_angle, tilt_axis, radians, star_output, overwrite):
     """
+    Generate angle priors for a tilted dataset.
+
     Read a Relion STAR_FILE with in-plane angles and generate priors
     for rot and tilt angles based on a TILT_ANGLE around a TILT_AXIS.
     """

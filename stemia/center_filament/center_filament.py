@@ -15,8 +15,9 @@ import click
 @click.option('-p', '--percentile', default=85, help='percentile for binarisation', show_default=True)
 def cli(input, output, starfile, star_output, update_by, n_filaments, percentile, overwrite):
     """
-    Center an mrc image containing filament(s). Can update particles in a RELION .star file accordingly.
+    Center an mrc image (stack) containing filament(s).
 
+    Can update particles in a RELION .star file accordingly.
     If OUTPUT is not given, default to INPUT_centered.mrc
     """
     from .funcs import center_filaments, update_starfile
