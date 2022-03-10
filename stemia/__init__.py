@@ -3,11 +3,18 @@ import pkgutil
 import importlib
 from pathlib import Path
 
+try:
+    from ._version import version
+except ImportError:
+    version = 'unknown'
+
 
 @click.group(context_settings=dict(help_option_names=['-h', '--help']))
+@click.version_option(version=version)
 def cli():
     """
-   Main entry point for stemia. Several subcommands are available.
+    Main entry point for stemia. Several subcommands are available.
+
     Try `stemia command -h` to get more information.
     """
 
