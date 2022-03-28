@@ -38,6 +38,8 @@ def cli(warp_dir, dry_run, ccderaser, aretomo, tilt_axis, overwrite, fix, norm, 
         '''))
         click.get_current_context().exit()
 
+    from .funcs import run_fix, run_normalize, run_align
+
     input_ext = '.mrc.st'
     if startfrom == 'fix':
         input_ext = '_fixed.mrc'
@@ -48,15 +50,12 @@ def cli(warp_dir, dry_run, ccderaser, aretomo, tilt_axis, overwrite, fix, norm, 
         norm = False
 
     if fix:
-        from .funcs import run_fix
         run_fix(ts_list, overwrite, input_ext, ccderaser)
         input_ext = '_fixed.mrc'
 
     if norm:
-        from .funcs import run_normalize
         run_normalize(ts_list, overwrite, input_ext)
         input_ext = '_norm.mrc'
 
     if align:
-        from .funcs import run_align
         run_align(ts_list, overwrite, input_ext, aretomo, tilt_axis)

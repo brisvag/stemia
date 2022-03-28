@@ -1,7 +1,7 @@
 import click
-import pkgutil
-import importlib
 from pathlib import Path
+
+from .utils.click import add_subcommands
 
 try:
     from ._version import version
@@ -19,12 +19,4 @@ def cli():
     """
 
 
-_submodules = {}
-for loader, name, is_pkg in pkgutil.walk_packages([str(Path(__file__).parent)]):
-    full_name = __package__ + '.' + name
-    module = importlib.import_module(full_name)
-    if hasattr(module, 'cli'):
-        _submodules[name] = module.cli
-
-for name, command in _submodules.items():
-    cli.add_command(command, name=name)
+add_subcommands(cli, Path(__file__).parent, __package__)

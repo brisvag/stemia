@@ -72,7 +72,7 @@ def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
 
             # run aretomo with basic settings
             tilt_axis_opt = f'-TiltAxis {tilt_axis}' if tilt_axis is not None else ''
-            aretomo_cmd = f'{aretomo} -InMrc {input} -OutMrc {aligned} -AngFile {rawtilt} -OutXF 1 {tilt_axis_opt} -TiltCor 1 -Gpu {gpus[0]} -VolZ 0'
+            aretomo_cmd = f'{aretomo} -InMrc {input} -OutMrc {aligned} -AngFile {rawtilt} -OutXF 1 {tilt_axis_opt} -TiltCor 1 -Gpu {gpus[0]} -VolZ 0 -DarkTol 0.5'
             proc = subprocess.run(aretomo_cmd.split(), capture_output=True, check=True)
 
             # aretomo is somehow circumventing the `cwd` argument of subprocess.run and dumping everything in the PARENT

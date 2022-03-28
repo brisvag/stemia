@@ -1,6 +1,6 @@
 import click
 
-from .utils.io_ import xml2dict
+from ..utils.io_ import xml2dict
 
 
 @click.command()
