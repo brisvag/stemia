@@ -3,13 +3,21 @@
 from stemia import cli
 import click
 
-readme = []
 
-for name, cmd in cli.commands.items():
-    header = f'### {name}\n\n```'
-    ctx = click.Context(cmd, info_name='stemia ' + name)
-    body = cmd.get_help(ctx)
-    footer = '```'
-    readme.append('\n'.join([header, body, footer]))
+def get_help(name, cli):
+    help = []
+    if isinstance(cli, click.Group):
+        for subname, subcli in cli.commands.items():
+            help.extend(get_help(f'{name} {subname}', subcli))
+    elif isinstance(cli, click.Command):
+        header = f'### {name}\n\n```'
+        ctx = click.Context(cli, info_name=name)
+        body = cli.get_help(ctx)
+        footer = '```'
+        help.append('\n'.join([header, body, footer]))
+    return help
 
-print('\n\n'.join(readme))
+
+help = get_help('stemia', cli)
+
+print('\n\n'.join(help))

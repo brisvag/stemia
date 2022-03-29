@@ -14,10 +14,22 @@ pip install stemia
 
 Everything is accessible through the main command line interface `stemia`. Try `stemia -h`.
 
-### aretomo_align
+### stemia aretomo aln2xf
 
 ```
-Usage: stemia aretomo_align [OPTIONS] [WARP_DIR]
+Usage: stemia aretomo aln2xf [OPTIONS] ALN_FILE
+
+  Convert AreTomo `aln` file to imod `xf` format.
+
+Options:
+  -f, --overwrite  overwrite existing output
+  --help           Show this message and exit.
+```
+
+### stemia aretomo batch_warp
+
+```
+Usage: stemia aretomo batch_warp [OPTIONS] [WARP_DIR]
 
   Run aretomo in batch on data preprocessed in warp.
 
@@ -28,7 +40,6 @@ Usage: stemia aretomo_align [OPTIONS] [WARP_DIR]
 Options:
   -d, --dry-run               only print some info, without running the
                               commands
-
   -t, --tilt-axis FLOAT       starting tilt axis for AreTomo, if any
   -f, --overwrite             overwrite any previous existing run
   --fix / --nofix             run ccderaser to fix the stack
@@ -36,44 +47,26 @@ Options:
   --align / --noalign         run aretomo to produce an alignment
   --startfrom [raw|fix|norm]  use outputs from a previous run starting from
                               this step
-
   --ccderaser TEXT            command for ccderaser
   --aretomo TEXT              command for aretomo
   --help                      Show this message and exit.
 ```
 
-### center_filament
+### stemia aretomo batch
 
 ```
-Usage: stemia center_filament [OPTIONS] INPUT [OUTPUT]
+Usage: stemia aretomo batch [OPTIONS]
 
-  Center an mrc image (stack) containing filament(s).
-
-  Can update particles in a RELION .star file accordingly. If OUTPUT is not
-  given, default to INPUT_centered.mrc
+  Run AreTomo on a full directory.
 
 Options:
-  -s, --update-star FILE        a RELION .star file to update with new
-                                particle positions
-
-  -o, --star-output FILE        where to put the updated version of the star
-                                file. Only used if -s is passed [default:
-                                STARFILE_centered.star]
-
-  --update-by [class|particle]  whether to update particle positions by
-                                classes or 1 by 1. Only used if -s is passed
-                                [default: class]
-
-  -f, --overwrite               overwrite output if exists
-  -n, --n-filaments INTEGER     number of filaments on the image  [default: 2]
-  -p, --percentile INTEGER      percentile for binarisation  [default: 85]
-  --help                        Show this message and exit.
+  --help  Show this message and exit.
 ```
 
-### csplot
+### stemia cryosparc csplot
 
 ```
-Usage: stemia csplot [OPTIONS] [CS_FILE]...
+Usage: stemia cryosparc csplot [OPTIONS] [CS_FILE]...
 
   Read cryosparc file(s) and plot interactively any column.
 
@@ -86,10 +79,54 @@ Options:
   --help  Show this message and exit.
 ```
 
-### flip_z
+### stemia cryosparc generate_tilt_angles
 
 ```
-Usage: stemia flip_z [OPTIONS] STAR_PATH
+Usage: stemia cryosparc generate_tilt_angles [OPTIONS] STAR_FILE TILT_ANGLE
+                                             TILT_AXIS
+
+  Generate angle priors for a tilted dataset.
+
+  Read a Relion STAR_FILE with in-plane angles and generate priors for rot and
+  tilt angles based on a TILT_ANGLE around a TILT_AXIS.
+
+Options:
+  -r, --radians           Provide angles in radians instead of degrees
+  -o, --star-output FILE  where to put the updated version of the star file
+                          [default: <STAR_FILE>_tilted.star]
+  -f, --overwrite         overwrite output if exists
+  --help                  Show this message and exit.
+```
+
+### stemia image center_filament
+
+```
+Usage: stemia image center_filament [OPTIONS] INPUT [OUTPUT]
+
+  Center an mrc image (stack) containing filament(s).
+
+  Can update particles in a RELION .star file accordingly. If OUTPUT is not
+  given, default to INPUT_centered.mrc
+
+Options:
+  -s, --update-star FILE        a RELION .star file to update with new
+                                particle positions
+  -o, --star-output FILE        where to put the updated version of the star
+                                file. Only used if -s is passed [default:
+                                STARFILE_centered.star]
+  --update-by [class|particle]  whether to update particle positions by
+                                classes or 1 by 1. Only used if -s is passed
+                                [default: class]
+  -f, --overwrite               overwrite output if exists
+  -n, --n-filaments INTEGER     number of filaments on the image  [default: 2]
+  -p, --percentile INTEGER      percentile for binarisation  [default: 85]
+  --help                        Show this message and exit.
+```
+
+### stemia image flip_z
+
+```
+Usage: stemia image flip_z [OPTIONS] STAR_PATH
 
   Flip the z axis for particles in a RELION star file.
 
@@ -106,40 +143,10 @@ Options:
   --help                   Show this message and exit.
 ```
 
-### generate_tilt_angles
+### stemia image rescale
 
 ```
-Usage: stemia generate_tilt_angles [OPTIONS] STAR_FILE TILT_ANGLE TILT_AXIS
-
-  Generate angle priors for a tilted dataset.
-
-  Read a Relion STAR_FILE with in-plane angles and generate priors for rot
-  and tilt angles based on a TILT_ANGLE around a TILT_AXIS.
-
-Options:
-  -r, --radians           Provide angles in radians instead of degrees
-  -o, --star-output FILE  where to put the updated version of the star file
-                          [default: <STAR_FILE>_tilted.star]
-
-  -f, --overwrite         overwrite output if exists
-  --help                  Show this message and exit.
-```
-
-### parse_warp_xml
-
-```
-Usage: stemia parse_warp_xml [OPTIONS] XML_FILE
-
-  Parse a warp xml file and print its content.
-
-Options:
-  --help  Show this message and exit.
-```
-
-### rescale
-
-```
-Usage: stemia rescale [OPTIONS] INPUT OUTPUT TARGET_PIXEL_SIZE
+Usage: stemia image rescale [OPTIONS] INPUT OUTPUT TARGET_PIXEL_SIZE
 
   Rescale an mrc image to the specified pixel size.
 
@@ -149,4 +156,77 @@ Options:
   --input-pixel-size FLOAT  force input pizel size and ignore mrc header
   -f, --overwrite           overwrite output if exists
   --help                    Show this message and exit.
+```
+
+### stemia warp fix_mdoc
+
+```
+Usage: stemia warp fix_mdoc [OPTIONS] DATA_DIR
+
+  Fix mdoc files to point to the right data.
+
+Options:
+  --help  Show this message and exit.
+```
+
+### stemia warp offset_angle
+
+```
+Usage: stemia warp offset_angle [OPTIONS] [WARP_DIR]
+
+  Offset tilt angles in warp xml files.
+
+Options:
+  -o, --offset INTEGER  The angle that will be considered the new 0 tilt.
+                        [required]
+  --help                Show this message and exit.
+```
+
+### stemia warp parse_xml
+
+```
+Usage: stemia warp parse_xml [OPTIONS] XML_FILE
+
+  Parse a warp xml file and print its content.
+
+Options:
+  --help  Show this message and exit.
+```
+
+### stemia warp prepare_isonet
+
+```
+Usage: stemia warp prepare_isonet [OPTIONS] WARP_DIR ISO_STAR
+
+  Update an isonet starfile with preprocessing data from warp.
+
+Options:
+  --help  Show this message and exit.
+```
+
+### stemia warp summarize
+
+```
+Usage: stemia warp summarize [OPTIONS] [WARP_DIR]
+
+  Summarize the state of a Warp project.
+
+Options:
+  --help  Show this message and exit.
+```
+
+### stemia warp preprocess_serialem
+
+```
+Usage: stemia warp preprocess_serialem [OPTIONS] RAW_DATA_DIR
+
+  Prepare and unpack data from sterialEM for Warp.
+
+  You must be in a new directory for this to work; new files will be placed
+  there with the same name as the original tifs.
+
+  RAW_DATA_DIR: the directory containing the raw data
+
+Options:
+  --help  Show this message and exit.
 ```
