@@ -54,26 +54,40 @@ def run_normalize(ts_list, overwrite, in_ext):
             ):
                 mrc_norm.set_data((mrc.data - mrc.data.mean()) / mrc.data.std())
 
+def aretomo_wrapper(ts_dir, in_ext, tilt_axis=0, patches=0, thickness_recon=0, gpu=0):
+    options = {
+        'InMrc': input,
+        'OutMrc': aligned,
+        'AngFile': rawtilt,
+        'TiltAxis': f'{tilt_axis}',
+        'Patch': f'{patches} {patches}',
+        'VolZ': thickness_recon,
+        'Gpu': gpu,
+        'OutXF': 1,
+        'DarlTol': 0.5,
+        'TiltCor': 1,
+    }
+    # run aretomo with basic settings
+    aretomo_cmd = ' '.join(f'-{k} {v}' for k, v in options.items())
+    print(aretomo_cmd)
+    # return subprocess.run(aretomo_cmd.split(), capture_output=True, check=True)
 
-def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
+
+def run_align(ts_dirs, overwrite, in_ext, aretomo, tilt_axis):
     gpus = [gpu.id for gpu in GPUtil.getGPUs()]
     if not gpus:
         raise click.UsageError('you need at least one GPU to run AreTomo')
     if not overwrite:
-        check_outputs_exist(ts_list, ('_aligned.mrc', 'mrc.xf'))
+        check_outputs_exist(ts_dirs, ('_aligned.mrc', 'mrc.xf'))
     warn = []
     skipped = False
-    with click.progressbar(ts_list, label='Aligning...   ', item_show_func=get_stem) as bar:
+    with click.progressbar(ts_dirs, label='Aligning...   ', item_show_func=get_stem) as bar:
         for ts_dir in bar:
-            ts_name = ts_dir / ts_dir.stem
-            input = f'{ts_name}{in_ext}'
-            aligned = f'{ts_name}_aligned.mrc'
-            rawtilt = f'{ts_name}.mrc.rawtlt'
+            input = ts_dir / (ts_dir.stem + in_ext)
+            aligned = input.with_stem('.aligned')
+            rawtilt = input.with_stem('.rawtilt')
 
-            # run aretomo with basic settings
-            tilt_axis_opt = f'-TiltAxis {tilt_axis}' if tilt_axis is not None else ''
-            aretomo_cmd = f'{aretomo} -InMrc {input} -OutMrc {aligned} -AngFile {rawtilt} -OutXF 1 {tilt_axis_opt} -TiltCor 1 -Gpu {gpus[0]} -VolZ 0 -DarkTol 0.5'
-            proc = subprocess.run(aretomo_cmd.split(), capture_output=True, check=True)
+            proc = aretomo_wrapper()
 
             # aretomo is somehow circumventing the `cwd` argument of subprocess.run and dumping everything in the PARENT
             # of the actual cwd. Could not solve, no clue why this happens. So we have to do things differently
@@ -95,7 +109,7 @@ def run_align(ts_list, overwrite, in_ext, aretomo, tilt_axis):
 
             if to_skip:
                 skipped = True
-                warp_dir = ts_list[0].parent.parent
+                warp_dir = ts_dirs[0].parent.parent
                 log = ts_dir / 'aretomo_align.log'
                 skipped = "\n".join([match.group() for match in to_skip])
                 log.write_text(f'Some images were too dark and were skipped by AreTomo:\n{skipped}\n')

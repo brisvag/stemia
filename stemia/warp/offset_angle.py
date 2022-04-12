@@ -3,16 +3,23 @@ import click
 
 @click.command()
 @click.argument('warp_dir', type=click.Path(exists=True, dir_okay=True, resolve_path=True), default='.')
-@click.option('-o', '--offset', type=int, required=True, help='The angle that will be considered the new 0 tilt.')
 def cli(warp_dir, offset):
     """
     Offset tilt angles in warp xml files.
     """
+    import mdocfile
+
     from xml.etree import ElementTree
     from pathlib import Path
     import shutil
 
     warp_dir = Path(warp_dir)
+    mdocs = list(warp_dir.glob('*.mdoc'))
+    with click.progressbar(mdocs, label='Fixing...') as bar:
+        for md_file in bar:
+            df = mdocfile.read(md_file)
+            zero_angle = df.tilt_angle[df.dose_rate.idxmax()]
+            print(mdoc)
 
     bak = list(warp_dir.glob('*.mrc.xml.bak'))
     xmls = list(warp_dir.glob('*.mrc.xml'))

@@ -9,7 +9,7 @@ except ImportError:
     version = 'unknown'
 
 
-@click.group(context_settings=dict(help_option_names=['-h', '--help']))
+@click.group(context_settings=dict(help_option_names=['-h', '--help'], show_default=True))
 @click.version_option(version=version)
 def cli():
     """
