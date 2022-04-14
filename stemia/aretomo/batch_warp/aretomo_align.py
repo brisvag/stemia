@@ -103,7 +103,8 @@ def cli(warp_dir, mdoc_dir, dry_run, only, thickness, binning, tilt_axis, patche
     click.secho(cleandoc(f'''
         Warp directory: {warp_dir}
         Mdoc directory: {mdoc_dir}
-        Tilt series:{''.join(f'{newline}{" " * 12}- {ts.stem}' for ts in ts_dirs)}
+        Tilt series - NOT READY: {''.join(f'{newline}{" " * 12}- {ts}' for ts in tilt_series_unprocessed) or None}
+        Tilt series - READY: {''.join(f'{newline}{" " * 12}- {ts}' for ts in tilt_series) or None}
         AreTomo options:
             - alignment thickness: {thickness}
             - reconstruction thickness: {recon_thickness}
