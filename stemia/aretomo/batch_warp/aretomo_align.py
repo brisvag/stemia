@@ -80,11 +80,9 @@ def cli(warp_dir, mdoc_dir, dry_run, only, thickness, binning, tilt_axis, patche
                 if param.get('Name') == 'BinTimes':
                     bin = float(param.get('Value'))
                 elif param.get('Name') == 'Voltage':
-                    voltage = int(param.get('Value'))
+                    kv = int(param.get('Value'))
                 elif param.get('Name') == 'Cs':
                     cs = float(param.get('Value'))
-                elif param.get('Name') == 'Kv':
-                    kv = int(param.get('Value'))
             for param in xml.find('CTF'):
                 if param.get('Name') == 'Defocus':
                     defocus = float(param.get('Value'))
@@ -95,7 +93,6 @@ def cli(warp_dir, mdoc_dir, dry_run, only, thickness, binning, tilt_axis, patche
                 'aretomo_kwargs': {
                     'dose': df.exposure_dose[0],
                     'px_size': df.pixel_spacing[0] * 2**bin,
-                    'voltage': voltage,
                     'cs': cs,
                     'kv': kv,
                     'defocus': defocus,
