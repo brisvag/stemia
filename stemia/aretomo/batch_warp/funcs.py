@@ -6,6 +6,7 @@ import GPUtil
 import mrcfile
 from queue import Queue
 from concurrent import futures
+import numpy as np
 
 
 def outputs_exist(ts_dirs, ext, error=False):
@@ -114,7 +115,7 @@ def _aretomo(
     }
     # run aretomo with basic settings
     aretomo_cmd = f"{cmd} {' '.join(f'-{k} {v}' for k, v in options.items())}"
-    proc = subprocess.run(aretomo_cmd.split(), capture_output=True, check=False, cwd=cwd)
+    proc = subprocess.run(aretomo_cmd.split(), capture_output=True, check=True, cwd=cwd)
     log.write_bytes(proc.stdout + proc.stderr)
 
 
@@ -143,10 +144,28 @@ def run_align(ts_dict, overwrite, in_ext, **aretomo_kwargs):
     skipped = False
     with futures.ThreadPoolExecutor(len(gpus)) as executor:
         jobs = []
-        for ts_name, ts_data in ts_dict:
-            input = ts_data['dir'] / (ts_name + in_ext)
-            jobs.append(executor.submit(_aretomo_queue, input, **aretomo_kwargs, **ts_data['aretomo_kwargs'], gpu_queue=gpu_queue))
+        for name, ts in ts_dict.items():
+            input = ts['dir'] / (name + in_ext)
+            jobs.append(executor.submit(_aretomo_queue, input, **aretomo_kwargs, **ts['aretomo_kwargs'], gpu_queue=gpu_queue))
         with click.progressbar(length=len(ts_dict), label='Aligning...') as bar:
+            for job in futures.as_completed(jobs):
+                bar.update(1)
+
+
+def _stack(images, output, cmd='newstack'):
+    stack_cmd = f'{cmd} {" ".join(str(img) for img in images)} {output}'
+    subprocess.run(stack_cmd.split(), capture_output=True, check=True)
+
+
+def prepare_half_stacks(ts_dict, cmd='newstack'):
+    with futures.ThreadPoolExecutor() as executor:
+        jobs = []
+        for name, ts in ts_dict.items():
+            for half in ('even', 'odd'):
+                input = ts[half]
+                output = ts['dir'] / (name + '.' + half)
+                jobs.append(executor.submit(_stack, input, output, cmd=cmd))
+        with click.progressbar(length=len(ts_dict) * 2, label='Preparing half stacks...') as bar:
             for job in futures.as_completed(jobs):
                 bar.update(1)
 

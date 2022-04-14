@@ -9,7 +9,7 @@ import click
               help='quickly reconstruct just this tomogram with a simple setup. Useful for testing and to estimate sample thickness')
 @click.option('-t', '--thickness', type=int, default=1200,
               help='unbinned thickness of the SAMPLE (ice or lamella); the reconstruction will be 20% thicker, but this will be used for alignment')
-@click.option('-b', '--binning', type=int, default=4, help='binning for aretomo reconstruction')
+@click.option('-b', '--binning', type=int, default=4, help='binning for aretomo reconstruction (relative to warp binning)')
 @click.option('-a', '--tilt-axis', type=float, help='starting tilt axis for AreTomo, if any')
 @click.option('-p', '--patches', type=int, default=4, help='number of patches for local alignment in aretomo (NxN)')
 @click.option('-f', '--overwrite', is_flag=True, help='overwrite any previous existing run')
@@ -41,17 +41,17 @@ def cli(warp_dir, mdoc_dir, dry_run, only, thickness, binning, tilt_axis, patche
 
     if mdoc_dir is None:
         mdoc_dir = warp_dir
+
     if only is not None:
         mdocs = [Path(mdoc_dir) / (ts_name + '.mdoc') for ts_name in only]
     else:
         mdocs = sorted(list(Path(mdoc_dir).glob('*.mdoc')))
+
     if not mdocs:
         raise click.UsageError('could not find any mdoc files')
 
-    if not (odd_dir := warp_dir / 'average' / 'odd').exists():
-        raise click.UsageError('could not find odd/even averages')
-    if not (even_dir := warp_dir / 'average' / 'even').exists():
-        raise click.UsageError('could not find odd/even averages')
+    odd_dir = warp_dir / 'average' / 'odd'
+    even_dir = warp_dir / 'average' / 'even'
 
     recon_thickness = int(thickness * 1.3)
 
@@ -68,14 +68,23 @@ def cli(warp_dir, mdoc_dir, dry_run, only, thickness, binning, tilt_axis, patche
                 tilt_series_unprocessed.append(ts_name)
                 continue
 
-            # extract frame paths
-            frames = [warp_dir / PureWindowsPath(fr).name for fr in df.sub_frame_path]
-            if not all(fr.exists() for fr in frames):
-                raise click.UsageError('frame paths in mdocs are wrong or files are missing')
+            # extract even/odd paths
+            tilts = [warp_dir / PureWindowsPath(tilt).name for tilt in df.sub_frame_path]
+            odd = []
+            even = []
+            for tilt in tilts:
+                xml = ElementTree.parse(tilt.with_suffix('.xml')).getroot()
+                if xml.attrib['UnselectManual'] == 'True':
+                    continue
 
-            # extract metadata from warp xmls
-            bin = 0
-            xml = ElementTree.parse(frames[0].with_suffix('.xml')).getroot()
+                odd.append(odd_dir / (tilt.stem + '.mrc'))
+                even.append(even_dir / (tilt.stem + '.mrc'))
+
+            for img in odd + even:
+                if not img.exists():
+                    raise FileNotFoundError(img)
+
+            # extract metadata from warp xmls (we assume the last xml has the same data as the others)
             for param in xml.find('OptionsCTF'):
                 if param.get('Name') == 'BinTimes':
                     bin = float(param.get('Value'))
@@ -89,7 +98,8 @@ def cli(warp_dir, mdoc_dir, dry_run, only, thickness, binning, tilt_axis, patche
 
             tilt_series[ts_name] = {
                 'dir': ts_dir,
-                'frames': frames,
+                'odd': odd,
+                'even': even,
                 'aretomo_kwargs': {
                     'dose': df.exposure_dose[0],
                     'px_size': df.pixel_spacing[0] * 2**bin,
@@ -113,7 +123,7 @@ def cli(warp_dir, mdoc_dir, dry_run, only, thickness, binning, tilt_axis, patche
     if dry_run:
         click.get_current_context().exit()
 
-    from .funcs import run_fix, run_normalize, run_align, outputs_exist
+    from .funcs import run_fix, run_normalize, run_align, outputs_exist, prepare_half_stacks
 
     ts_dirs = list(ts['dir'] for ts in tilt_series.values())
 
@@ -134,23 +144,25 @@ def cli(warp_dir, mdoc_dir, dry_run, only, thickness, binning, tilt_axis, patche
         fix = False
         norm = False
 
-    if fix:
-        run_fix(ts_dirs, overwrite, input_ext, cmd=ccderaser)
-        input_ext = '.fixed'
+    # if fix:
+        # run_fix(ts_dirs, overwrite, input_ext, cmd=ccderaser)
+        # input_ext = '.fixed'
 
-    if norm:
-        run_normalize(ts_dirs, overwrite, input_ext)
-        input_ext = '.norm'
+    # if norm:
+        # run_normalize(ts_dirs, overwrite, input_ext)
+        # input_ext = '.norm'
 
-    if align:
-        run_align(
-            tilt_series,
-            overwrite,
-            input_ext,
-            cmd=aretomo,
-            tilt_axis=tilt_axis,
-            patches=patches,
-            thickness_align=thickness,
-            thickness_recon=recon_thickness,
-            binning=binning),
-        input_ext = '.aligned'
+    # if align:
+        # run_align(
+            # tilt_series,
+            # overwrite,
+            # input_ext,
+            # cmd=aretomo,
+            # tilt_axis=tilt_axis,
+            # patches=patches,
+            # thickness_align=thickness,
+            # thickness_recon=recon_thickness,
+            # binning=binning),
+        # input_ext = '.aligned'
+
+    prepare_half_stacks(tilt_series)
