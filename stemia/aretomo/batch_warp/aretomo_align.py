@@ -5,7 +5,9 @@ from enum import Enum, auto
 class ProcessingStep(str, Enum):
     fix = auto()
     align = auto()
-    half = auto()
+    stack_halves = auto()
+    reconstruct_halves = auto()
+    denoise = auto()
 
     def __str__(self):
         return self.name
@@ -143,16 +145,16 @@ def cli(warp_dir, mdoc_dir, dry_run, verbose, only, thickness, binning, tilt_axi
         [bold]AreTomo options[/bold]: {''.join(f'{nl}{" " * 12}- {k}: {v}' for k, v in aretomo_kwargs.items())}
     ''')))
 
-    from .funcs import fix_batch, aretomo_batch, prepare_half_stacks
+    from .funcs import fix_batch, aretomo_batch, prepare_half_stacks, topaz_batch
 
     startfrom = ProcessingStep[startfrom]
 
-    if startfrom < ProcessingStep.fix:
+    if startfrom <= ProcessingStep.fix:
         if verbose:
             print('\n[green]Fixing with ccderaser...')
         fix_batch(tilt_series, cmd=ccderaser, **meta_kwargs)
 
-    if startfrom < ProcessingStep.align:
+    if startfrom <= ProcessingStep.align:
         if verbose:
             print('\n[green]Aligning and reconstructing with AreTomo...')
         aretomo_batch(
@@ -161,18 +163,26 @@ def cli(warp_dir, mdoc_dir, dry_run, verbose, only, thickness, binning, tilt_axi
             **meta_kwargs,
         )
 
-    if startfrom < ProcessingStep.half:
+    if startfrom <= ProcessingStep.stack_halves:
         for half in ('even', 'odd'):
             if verbose:
                 print(f'\n[green]Preparing {half} stacks for denoising...')
-                prepare_half_stacks(tilt_series, half=half, **meta_kwargs)
+            prepare_half_stacks(tilt_series, half=half, **meta_kwargs)
+
+    if startfrom <= ProcessingStep.reconstruct_halves:
+        for half in ('even', 'odd'):
             if verbose:
                 print(f'\n[green]Reconstructing {half} tomograms for deonoising...')
-                aretomo_batch(
-                    tilt_series,
-                    suffix=f'_{half}',
-                    from_aln=True,
-                    label='Reconstructing...',
-                    **aretomo_kwargs,
-                    **meta_kwargs,
-                )
+            aretomo_batch(
+                tilt_series,
+                suffix=f'_{half}',
+                from_aln=True,
+                label='Reconstructing...',
+                **aretomo_kwargs,
+                **meta_kwargs,
+            )
+
+    if startfrom <= ProcessingStep.denoise:
+        if verbose:
+            print('\n[green]Reconstructing denoised tomogram...')
+        topaz_batch(tilt_series, **meta_kwargs)

@@ -35,6 +35,8 @@ def run_threaded(partials, label='', max_workers=None, dry_run=False, **kwargs):
         for thread in executor._threads:
             task = bar.add_task('', total=math.ceil(len(partials) / max_workers))
             thread_to_task[thread.ident] = task
+        if executor._threads == 1:
+            task.disable = True
 
         exist = 0
         errors = []
@@ -229,3 +231,31 @@ def prepare_half_stacks(tilt_series, half, cmd='newstack', **kwargs):
         output = ts['stack'].with_stem(ts['stack'].stem + f'_{half}')
         partials.append(lambda: _stack(ts[half], output, cmd=cmd, **kwargs))
     run_threaded(partials, label=f'Stacking {half} halves...', **kwargs)
+
+
+def _topaz(output, even, odd, cmd='topaz', dry_run=False, verbose=False, overwrite=False):
+    if not overwrite and output.exists():
+        raise FileExistsError(output)
+    topaz_cmd = f'{cmd} denoise3d -a {even} -b {odd} -o {output}'
+
+    if verbose:
+        print(topaz_cmd)
+
+    if not dry_run:
+        subprocess.run(topaz_cmd.split(), capture_output=True, check=True)
+    else:
+        sleep(0.1)
+
+
+def topaz_batch(tilt_series, cmd='topaz', **kwargs):
+    if not shutil.which(cmd):
+        raise click.UsageError(f'{cmd} is not available on the system')
+
+    partials = []
+    for ts in tilt_series.values():
+        st = ts['stack']
+        output = st.parent / 'denoise'
+        even = st.with_stem(st.stem + '_even').with_suffix('.mrc')
+        odd = st.with_stem(st.stem + '_odd').with_suffix('.mrc')
+        partials.append(lambda: _topaz(output, even, odd, cmd=cmd, **kwargs))
+    run_threaded(partials, label='Denoising...', **kwargs)
