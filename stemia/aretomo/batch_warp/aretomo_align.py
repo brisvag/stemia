@@ -15,14 +15,13 @@ import click
 @click.option('-p', '--patches', type=int, default=4, help='number of patches for local alignment in aretomo (NxN)')
 @click.option('-f', '--overwrite', is_flag=True, help='overwrite any previous existing run')
 @click.option('--fix/--no-fix', default=True, help='run ccderaser to fix the stack')
-@click.option('--norm/--no-norm', default=True, help='use mrcfile to normalize the images')
 @click.option('--align/--no-align', default=True, help='run aretomo to produce an alignment')
 @click.option('--aretomo-denoise/--no-aretomo-denoise', default=True, help='use even/odd frames to generate denoised aretomo reconstructions')
-@click.option('--startfrom', type=click.Choice(('auto', 'fix', 'norm', 'ali')), default='auto',
+@click.option('--startfrom', type=click.Choice(('auto', 'fix', 'ali')), default='auto',
               help='use outputs from a previous run, starting processing at this step')
 @click.option('--ccderaser', type=str, default='ccderaser', help='command for ccderaser')
 @click.option('--aretomo', type=str, default='AreTomo', help='command for aretomo')
-def cli(warp_dir, mdoc_dir, dry_run, verbose, only, thickness, binning, tilt_axis, patches, overwrite, fix, norm, align, aretomo_denoise, startfrom, ccderaser, aretomo):
+def cli(warp_dir, mdoc_dir, dry_run, verbose, only, thickness, binning, tilt_axis, patches, overwrite, fix, align, aretomo_denoise, startfrom, ccderaser, aretomo):
     """
     Run aretomo in batch on data preprocessed in warp.
 
@@ -127,14 +126,10 @@ def cli(warp_dir, mdoc_dir, dry_run, verbose, only, thickness, binning, tilt_axi
         verbose=verbose,
     )
 
-    in_ext = '.st'
-    # if startfrom == 'norm':
-        # in_ext = '_fix'
-        # fix = False
+    in_ext = ''
     if startfrom == 'ali':
         in_ext = '_fix'
         fix = False
-        # norm = False
 
     newline = '\n'
     print(Panel(cleandoc(f'''
@@ -154,10 +149,6 @@ def cli(warp_dir, mdoc_dir, dry_run, verbose, only, thickness, binning, tilt_axi
             print('\n[green]Fixing with ccderaser...')
         fix_batch(tilt_series, cmd=ccderaser, **meta_kwargs)
         in_ext = '_fix'
-
-    # if norm:
-        # normalize_batch(tilt_series, in_ext=input_ext, **meta_kwargs)
-        # in_ext = '_norm'
 
     if align:
         if verbose:

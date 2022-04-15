@@ -6,7 +6,6 @@ import GPUtil
 from queue import Queue
 from concurrent import futures
 from itertools import product
-import numpy as np
 from rich.progress import Progress
 import threading
 import math
@@ -73,23 +72,6 @@ def fix_batch(tilt_series, cmd='ccderaser', **kwargs):
 
     partials = [lambda: _ccderaser(ts['stack'], cmd=cmd, **kwargs) for ts in tilt_series.values()]
     run_threaded(partials, label='Fixing...', **kwargs)
-
-
-# def _normalize(input, in_ext, overwrite=False):
-    # normalized = input.with_stem(input.stem.removesuffix(in_ext) + '_norm')
-    # if not overwrite and normalized.exists():
-        # raise FileExistsError(normalized)
-    # # normalize to mean 0 and stdev 1
-    # with (
-        # mrcfile.open(input) as mrc,
-        # mrcfile.new(normalized, overwrite=True) as mrc_norm
-    # ):
-        # mrc_norm.set_data((mrc.data - mrc.data.mean()) / mrc.data.std())
-
-
-# def normalize_batch(tilt_series, **kwargs):
-    # partials = [lambda: _normalize(ts['stack'], **kwargs) for ts in tilt_series.values()]
-    # run_threaded(partials, label='Normalizing...')
 
 
 def _aretomo(
@@ -238,48 +220,3 @@ def prepare_half_stacks(tilt_series, in_ext, cmd='newstack', **kwargs):
         output = ts['stack'].with_stem(ts['stack'].stem.removesuffix(in_ext) + f'_{half}')
         partials.append(lambda: _stack(ts[half], output, cmd=cmd, **kwargs))
     run_threaded(partials, label='Stacking halves...', **kwargs)
-
-
-            # # aretomo is somehow circumventing the `cwd` argument of subprocess.run and dumping everything in the PARENT
-            # # of the actual cwd. Could not solve, no clue why this happens. So we have to do things differently
-            # # and move the output around a bit
-            # imod_dir = ts_dir.parent
-            # tlt = imod_dir / f'{ts_dir.stem}.aln'
-            # aln = imod_dir / f'{ts_dir.stem}.tlt'
-            # xf = imod_dir / f'{ts_dir.stem}.xf'
-            # xf_warp = f'{ts_name}.mrc.xf'  # needs to be renamed for warp to see it
-            # shutil.move(tlt, ts_dir)
-            # shutil.move(aln, ts_dir)
-            # shutil.move(xf, xf_warp)
-
-            # # find any images removed by aretomo cause too dark (should not happen with normalization)
-            # to_skip = []
-            # for line in proc.stdout.decode().split('\n'):
-                # if match := re.search(r'Remove image at (\S+) degree: .*', line):
-                    # to_skip.append(match)
-
-            # if to_skip:
-                # skipped = True
-                # warp_dir = ts_dirs[0].parent.parent
-                # log = ts_dir / 'aretomo_align.log'
-                # skipped = "\n".join([match.group() for match in to_skip])
-                # log.write_text(f'Some images were too dark and were skipped by AreTomo:\n{skipped}\n')
-                # # flag as disabled in warp
-                # for match in to_skip:
-                    # angle = match.group(1)
-                    # glob = f'{ts_dir.stem}_*_{float(angle):.1f}.xml'
-                    # xml = list(warp_dir.glob(glob))
-                    # if len(xml) != 1:
-                        # warn.append(ts_name)
-                        # continue
-                    # xml = xml[0]
-                    # content = xml.read_text(encoding='utf16')  # warp...
-                    # replaced = content.replace('UnselectManual="null"', 'UnselectManual="True"')
-                    # xml.write_text(replaced, encoding='utf16')
-
-    # if warn:
-        # click.secho(f'WARNING: somehow found the wrong number of xml files in {warp_dir}')
-        # click.secho(f'Check the log and manually disable tilts in Warp for: {", ".join(str(ts)) for ts in warn}.')
-    # elif skipped:
-        # click.secho('WARNING: some images were too dark and were skipped by aretomo.')
-        # click.secho('Warp xml files were automatically updated to reflect these changes by skipping some images!')
