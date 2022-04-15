@@ -1,80 +1,101 @@
 import click
 import subprocess
-import re
+from time import sleep
 import shutil
 import GPUtil
-import mrcfile
 from queue import Queue
 from concurrent import futures
+from itertools import product
 import numpy as np
+from rich.progress import Progress
+import threading
+import math
+import os
+from rich import print
 
 
-def outputs_exist(ts_dirs, ext, error=False):
-    if not isinstance(ext, tuple):
-        ext = (ext,)
-    for ts_dir in ts_dirs:
-        for ex in ext:
-            file = ts_dir / (ts_dir.name + ex)
-            if file.exists():
-                if error:
-                    raise FileExistsError(f'{file} already exists; use -f/--overwrite to overwrite any existing files')
-                return True
-    return False
+def run_threaded(partials, label='', max_workers=None, dry_run=False, **kwargs):
+    def update_bar(bar, thread_to_task):
+        bar.update(thread_to_task[threading.get_ident()], advance=1)
+
+    max_workers = max_workers or min(32, os.cpu_count() + 4)  # see concurrent docs
+    thread_to_task = {}
+
+    with (
+        Progress(disable=dry_run) as bar,
+        futures.ThreadPoolExecutor(max_workers) as executor
+    ):
+        main_task = bar.add_task(label, total=len(partials))
+
+        jobs = []
+        for fn in partials:
+            job = executor.submit(fn)
+            job.add_done_callback(lambda _: update_bar(bar, thread_to_task))
+            jobs.append(job)
+
+        for thread in executor._threads:
+            task = bar.add_task('', total=math.ceil(len(partials) / max_workers))
+            thread_to_task[thread.ident] = task
+
+        exist = 0
+        for job in futures.as_completed(jobs):
+            try:
+                job.result()
+            except FileExistsError:
+                exist += 1
+            bar.update(main_task, advance=1)
+
+        for t in bar.tasks:
+            t.completed = t.total
+
+        if exist:
+            print(f'[red]{exist} files already existed and were not overwritten')
 
 
-def get_stem(path):
-    if path is not None:
-        return path.stem
-    return ''
-
-
-def _ccderaser(input, cmd='ccderaser'):
-    fixed = input.with_suffix('.fixed')
+def _ccderaser(input, cmd='ccderaser', dry_run=False, verbose=False, overwrite=False):
+    fixed = input.with_stem(input.stem + '_fix')
+    if not overwrite and fixed.exists():
+        raise FileExistsError(fixed)
     # run ccderaser, defaults from etomo
     ccderaser_cmd = f'{cmd} -input {input} -output {fixed} -find -peak 8.0 -diff 6.0 -big 19. -giant 12. -large 8. -grow 4. -edge 4'
-    subprocess.run(ccderaser_cmd.split(), capture_output=True, check=True)
+
+    if verbose:
+        print(ccderaser_cmd)
+    if not dry_run:
+        subprocess.run(ccderaser_cmd.split(), capture_output=True, check=True)
+    else:
+        sleep(0.1)
 
 
-def run_fix(ts_dirs, overwrite, in_ext, cmd='ccderaser'):
+def fix_batch(tilt_series, cmd='ccderaser', **kwargs):
     if not shutil.which(cmd):
-        raise click.UsageError('ccderaser is not available on the system')
-    if not overwrite:
-        outputs_exist(ts_dirs, '.fixed', error=True)
-    with futures.ThreadPoolExecutor() as executor:
-        jobs = []
-        for ts_dir in ts_dirs:
-            input = ts_dir / (ts_dir.name + in_ext)
-            jobs.append(executor.submit(_ccderaser, input, cmd=cmd))
-        with click.progressbar(length=len(ts_dirs), label='Fixing...') as bar:
-            for job in futures.as_completed(jobs):
-                bar.update(1)
+        raise click.UsageError(f'{cmd} is not available on the system')
+
+    partials = [lambda: _ccderaser(ts['stack'], cmd=cmd, **kwargs) for ts in tilt_series.values()]
+    run_threaded(partials, label='Fixing...', **kwargs)
 
 
-def _normalize(input):
-    normalized = input.with_suffix('.norm')
-    # normalize to mean 0 and stdev 1
-    with (
-        mrcfile.open(input) as mrc,
-        mrcfile.new(normalized, overwrite=True) as mrc_norm
-    ):
-        mrc_norm.set_data((mrc.data - mrc.data.mean()) / mrc.data.std())
+# def _normalize(input, in_ext, overwrite=False):
+    # normalized = input.with_stem(input.stem.removesuffix(in_ext) + '_norm')
+    # if not overwrite and normalized.exists():
+        # raise FileExistsError(normalized)
+    # # normalize to mean 0 and stdev 1
+    # with (
+        # mrcfile.open(input) as mrc,
+        # mrcfile.new(normalized, overwrite=True) as mrc_norm
+    # ):
+        # mrc_norm.set_data((mrc.data - mrc.data.mean()) / mrc.data.std())
 
 
-def run_normalize(ts_dirs, overwrite, in_ext):
-    if not overwrite:
-        outputs_exist(ts_dirs, '.norm', error=True)
-    with futures.ThreadPoolExecutor() as executor:
-        jobs = []
-        for ts_dir in ts_dirs:
-            input = ts_dir / (ts_dir.name + in_ext)
-            jobs.append(executor.submit(_normalize, input))
-        with click.progressbar(length=len(ts_dirs), label='Normalizing...') as bar:
-            for job in futures.as_completed(jobs):
-                bar.update(1)
+# def normalize_batch(tilt_series, **kwargs):
+    # partials = [lambda: _normalize(ts['stack'], **kwargs) for ts in tilt_series.values()]
+    # run_threaded(partials, label='Normalizing...')
 
 
 def _aretomo(
     input,
+    in_ext='',
+    out_ext='_aligned',
     cmd='AreTomo',
     gpu=0,
     tilt_axis=0,
@@ -87,19 +108,24 @@ def _aretomo(
     dose=0,
     cs=0,
     defocus=0,
+    from_aln=False,
+    gpu_queue=None,
+    dry_run=False,
+    verbose=False,
+    overwrite=False,
 ):
-    output = input.with_suffix('.aligned')
-    rawtlt = input.with_suffix('.rawtlt')
-    log = input.with_suffix('.log')
-    cwd = output.parent.absolute()
+    # cwd dance is necessary cause aretomo messes up paths otherwise
+    cwd = input.parent.absolute()
+    rawtlt = input.with_stem(input.stem.removesuffix(in_ext)).with_suffix('.rawtlt').relative_to(cwd)
+    output = input.with_stem(input.stem.removesuffix(in_ext) + out_ext).with_suffix('.mrc').relative_to(cwd)
+    input = input.relative_to(cwd)
+    if not overwrite and output.exists():
+        raise FileExistsError(output)
+
     options = {
-        'InMrc': input.relative_to(cwd),
-        'OutMrc': output.relative_to(cwd),
-        'AngFile': rawtlt.relative_to(cwd),
-        # 'LogFile': log.relative_to(cwd),  # currently broken
-        'TiltAxis': tilt_axis or 0,
-        'Patch': f'{patches} {patches}',
-        'AlignZ': thickness_align,
+        'InMrc': input,
+        'OutMrc': output,
+        # 'LogFile': input.with_suffix('.log').relative_to(cwd),  # currently broken
         'VolZ': thickness_recon,
         'OutBin': binning,
         'PixSize': px_size,
@@ -108,66 +134,111 @@ def _aretomo(
         'Cs': cs,
         'Defoc': defocus,
         'Gpu': gpu,
-        'OutXF': 1,
-        'TiltCor': 1,
         'FlipVol': 1,
         'DarkTol': 0,
     }
+
+    if from_aln:
+        # due to a quirk of aretomo, with_suffix is named wrong because all extensions are removed
+        # for now, let's just hope a single aln exists
+        aln = next(cwd.glob('*.aln'))
+        if not aln.exists():
+            raise FileNotFoundError(aln)
+        options.update({
+            # 'AlnFile': input.with_suffix('.aln').relative_to(cwd),
+            'AlnFile': aln,
+        })
+    else:
+        options.update({
+            'AngFile': rawtlt,
+            'AlignZ': thickness_align,
+            'TiltAxis': tilt_axis or 0,
+            'Patch': f'{patches} {patches}',
+            'TiltCor': 1,
+            'OutXF': 1,
+        })
+
+    # only one job per gpu, to make sure
+    if gpu_queue is None:
+        gpu = gpu or 0
+    else:
+        gpu = gpu_queue.get()
+
     # run aretomo with basic settings
     aretomo_cmd = f"{cmd} {' '.join(f'-{k} {v}' for k, v in options.items())}"
-    proc = subprocess.run(aretomo_cmd.split(), capture_output=True, check=True, cwd=cwd)
-    log.write_bytes(proc.stdout + proc.stderr)
+
+    if verbose:
+        print(aretomo_cmd)
+
+    if not dry_run:
+        try:
+            proc = subprocess.run(aretomo_cmd.split(), capture_output=True, check=False, cwd=cwd)
+        finally:
+            # LogFile is broken, so we do it ourselves
+            log = input.with_suffix('.aretomolog').relative_to(cwd)
+            log.write_bytes(proc.stdout + proc.stderr)
+            if gpu_queue is not None:
+                gpu_queue.put(gpu)
+            proc.check_returncode()
+    else:
+        sleep(0.1)
 
 
-def _aretomo_queue(*args, gpu_queue=None, **kwargs):
-    gpu = gpu_queue.get()
-    try:
-        _aretomo(*args, **kwargs, gpu=gpu)
-    finally:
-        gpu_queue.put(gpu)
-
-
-def run_align(ts_dict, overwrite, in_ext, **aretomo_kwargs):
+def aretomo_batch(tilt_series, in_ext='', out_ext='_aligned', label='Aretomoing...', cmd='AreTomo', **kwargs):
+    if not shutil.which(cmd):
+        raise click.UsageError(f'{cmd} is not available on the system')
     gpus = [gpu.id for gpu in GPUtil.getGPUs()]
     if not gpus:
         raise click.UsageError('you need at least one GPU to run AreTomo')
-    click.secho(f'Running AreTomo in parallel on {len(gpus)} GPUs.')
+    print(f'[yellow]Running AreTomo in parallel on {len(gpus)} GPUs.')
+
     # use a queue to hold gpu ids to ensure we only run one job per gpu
     gpu_queue = Queue()
     for gpu in gpus:
         gpu_queue.put(gpu)
 
-    if not overwrite:
-        outputs_exist((ts['dir'] for ts in ts_dict.values()), ('.aligned', '.xf'), error=True)
+    partials = []
+    for ts in tilt_series.values():
+        input = ts['stack'].with_stem(ts['stack'].stem + in_ext)
+        partials.append(
+            lambda: _aretomo(
+                input=input,
+                in_ext=in_ext,
+                out_ext=out_ext,
+                gpu_queue=gpu_queue,
+                cmd=cmd,
+                **ts['aretomo_kwargs'],
+                **kwargs,
+            )
+        )
 
-    warn = []
-    skipped = False
-    with futures.ThreadPoolExecutor(len(gpus)) as executor:
-        jobs = []
-        for name, ts in ts_dict.items():
-            input = ts['dir'] / (name + in_ext)
-            jobs.append(executor.submit(_aretomo_queue, input, **aretomo_kwargs, **ts['aretomo_kwargs'], gpu_queue=gpu_queue))
-        with click.progressbar(length=len(ts_dict), label='Aligning...') as bar:
-            for job in futures.as_completed(jobs):
-                bar.update(1)
+    run_threaded(partials, label=label, **kwargs)
 
 
-def _stack(images, output, cmd='newstack'):
+def _stack(images, output, cmd='newstack', dry_run=False, verbose=False, overwrite=False):
+    if not overwrite and output.exists():
+        raise FileExistsError(output)
     stack_cmd = f'{cmd} {" ".join(str(img) for img in images)} {output}'
-    subprocess.run(stack_cmd.split(), capture_output=True, check=True)
+
+    if verbose:
+        print(stack_cmd)
+
+    if not dry_run:
+        subprocess.run(stack_cmd.split(), capture_output=True, check=True)
+    else:
+        sleep(0.1)
 
 
-def prepare_half_stacks(ts_dict, cmd='newstack'):
-    with futures.ThreadPoolExecutor() as executor:
-        jobs = []
-        for name, ts in ts_dict.items():
-            for half in ('even', 'odd'):
-                input = ts[half]
-                output = ts['dir'] / (name + '.' + half)
-                jobs.append(executor.submit(_stack, input, output, cmd=cmd))
-        with click.progressbar(length=len(ts_dict) * 2, label='Preparing half stacks...') as bar:
-            for job in futures.as_completed(jobs):
-                bar.update(1)
+def prepare_half_stacks(tilt_series, in_ext, cmd='newstack', **kwargs):
+    if not shutil.which(cmd):
+        raise click.UsageError(f'{cmd} is not available on the system')
+
+    partials = []
+    for ts, half in product(tilt_series.values(), ('even', 'odd')):
+        output = ts['stack'].with_stem(ts['stack'].stem.removesuffix(in_ext) + f'_{half}')
+        partials.append(lambda: _stack(ts[half], output, cmd=cmd, **kwargs))
+    run_threaded(partials, label='Stacking halves...', **kwargs)
+
 
             # # aretomo is somehow circumventing the `cwd` argument of subprocess.run and dumping everything in the PARENT
             # # of the actual cwd. Could not solve, no clue why this happens. So we have to do things differently
