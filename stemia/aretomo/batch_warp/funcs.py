@@ -84,8 +84,7 @@ def fix_batch(tilt_series, cmd='ccderaser', **kwargs):
 
 def _aretomo(
     input,
-    in_suffix='',
-    out_suffix='_aligned',
+    suffix='',
     cmd='AreTomo',
     gpu=0,
     tilt_axis=0,
@@ -106,9 +105,8 @@ def _aretomo(
 ):
     # cwd dance is necessary cause aretomo messes up paths otherwise
     cwd = input.parent.absolute()
-    nosuffix = input.stem.removesuffix(in_suffix)
-    rawtlt = input.with_stem(nosuffix).with_suffix('.rawtlt').relative_to(cwd)
-    output = input.with_stem(nosuffix + out_suffix).with_suffix('.mrc').relative_to(cwd)
+    rawtlt = input.with_stem(input.stem.removesuffix(suffix)).with_suffix('.rawtlt').relative_to(cwd)
+    output = input.with_suffix('.mrc').relative_to(cwd)
     # LogFile is broken, so we do it ourselves
     log = input.with_suffix('.aretomolog').relative_to(cwd)
     input = input.relative_to(cwd)
@@ -176,7 +174,7 @@ def _aretomo(
         sleep(0.1)
 
 
-def aretomo_batch(tilt_series, in_suffix='', out_suffix='_aligned', label='Aligning...', cmd='AreTomo', **kwargs):
+def aretomo_batch(tilt_series, suffix='', label='Aligning...', cmd='AreTomo', **kwargs):
     if not shutil.which(cmd):
         raise click.UsageError(f'{cmd} is not available on the system')
     gpus = [gpu.id for gpu in GPUtil.getGPUs()]
@@ -192,12 +190,11 @@ def aretomo_batch(tilt_series, in_suffix='', out_suffix='_aligned', label='Align
 
     partials = []
     for ts in tilt_series.values():
-        input = ts['stack'].with_stem(ts['stack'].stem + in_suffix)
+        input = ts['stack'].with_stem(ts['stack'].stem + suffix)
         partials.append(
             lambda: _aretomo(
                 input=input,
-                in_suffix=in_suffix,
-                out_suffix=out_suffix,
+                suffix=suffix,
                 gpu_queue=gpu_queue,
                 cmd=cmd,
                 **ts['aretomo_kwargs'],

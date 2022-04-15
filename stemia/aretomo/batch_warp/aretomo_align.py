@@ -170,8 +170,7 @@ def cli(warp_dir, mdoc_dir, dry_run, verbose, only, thickness, binning, tilt_axi
                 print(f'\n[green]Reconstructing {half} tomograms for deonoising...')
                 aretomo_batch(
                     tilt_series,
-                    in_suffix=f'_{half}',
-                    out_suffix=f'_{half}',
+                    suffix=f'_{half}',
                     from_aln=True,
                     label='Reconstructing...',
                     **aretomo_kwargs,
