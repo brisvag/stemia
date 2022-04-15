@@ -1,4 +1,14 @@
 import click
+from enum import Enum, auto
+
+
+class ProcessingStep(str, Enum):
+    fix = auto()
+    align = auto()
+    half = auto()
+
+    def __str__(self):
+        return self.name
 
 
 @click.command()
@@ -14,14 +24,11 @@ import click
 @click.option('-a', '--tilt-axis', type=float, help='starting tilt axis for AreTomo, if any')
 @click.option('-p', '--patches', type=int, default=4, help='number of patches for local alignment in aretomo (NxN)')
 @click.option('-f', '--overwrite', is_flag=True, help='overwrite any previous existing run')
-@click.option('--fix/--no-fix', default=True, help='run ccderaser to fix the stack')
-@click.option('--align/--no-align', default=True, help='run aretomo to produce an alignment')
-@click.option('--aretomo-denoise/--no-aretomo-denoise', default=True, help='use even/odd frames to generate denoised aretomo reconstructions')
-@click.option('--startfrom', type=click.Choice(('auto', 'fix', 'ali')), default='auto',
+@click.option('--startfrom', type=click.Choice(ProcessingStep.__members__), default='fix',
               help='use outputs from a previous run, starting processing at this step')
 @click.option('--ccderaser', type=str, default='ccderaser', help='command for ccderaser')
 @click.option('--aretomo', type=str, default='AreTomo', help='command for aretomo')
-def cli(warp_dir, mdoc_dir, dry_run, verbose, only, thickness, binning, tilt_axis, patches, overwrite, fix, align, aretomo_denoise, startfrom, ccderaser, aretomo):
+def cli(warp_dir, mdoc_dir, dry_run, verbose, only, thickness, binning, tilt_axis, patches, overwrite, startfrom, ccderaser, aretomo):
     """
     Run aretomo in batch on data preprocessed in warp.
 
@@ -41,7 +48,7 @@ def cli(warp_dir, mdoc_dir, dry_run, verbose, only, thickness, binning, tilt_axi
 
     imod_dir = warp_dir / 'imod'
     if not imod_dir.exists():
-        raise click.UsageError('warp directory does not have an `imod` subdirectory')
+        raise FileNotFoundError('warp directory does not have an `imod` subdirectory')
 
     if mdoc_dir is None:
         mdoc_dir = warp_dir
@@ -52,7 +59,7 @@ def cli(warp_dir, mdoc_dir, dry_run, verbose, only, thickness, binning, tilt_axi
         mdocs = sorted(list(Path(mdoc_dir).glob('*.mdoc')))
 
     if not mdocs:
-        raise click.UsageError('could not find any mdoc files')
+        raise FileNotFoundError('could not find any mdoc files')
 
     odd_dir = warp_dir / 'average' / 'odd'
     even_dir = warp_dir / 'average' / 'even'
@@ -81,10 +88,9 @@ def cli(warp_dir, mdoc_dir, dry_run, verbose, only, thickness, binning, tilt_axi
             odd.append(odd_dir / (tilt.stem + '.mrc'))
             even.append(even_dir / (tilt.stem + '.mrc'))
 
-        if aretomo_denoise:
-            for img in odd + even:
-                if not img.exists():
-                    raise FileNotFoundError(img)
+        for img in odd + even:
+            if not img.exists():
+                raise FileNotFoundError(img)
 
         # extract metadata from warp xmls (we assume the last xml has the same data as the others)
         for param in xml.find('OptionsCTF'):
@@ -126,52 +132,48 @@ def cli(warp_dir, mdoc_dir, dry_run, verbose, only, thickness, binning, tilt_axi
         verbose=verbose,
     )
 
-    in_ext = ''
-    if startfrom == 'ali':
-        in_ext = '_fix'
-        fix = False
-
-    newline = '\n'
+    nl = '\n'
     print(Panel(cleandoc(f'''
         [bold]Warp directory[/bold]: {warp_dir}
         [bold]Mdoc directory[/bold]: {mdoc_dir}
-        [bold]Tilt series - NOT READY[/bold]: {''.join(f'{newline}{" " * 12}- {ts}' for ts in tilt_series_unprocessed)}
-        [bold]Tilt series - READY[/bold]: {''.join(f'{newline}{" " * 12}- {ts}' for ts in tilt_series)}
+        [bold]Tilt series - NOT READY[/bold]: {''.join(f'{nl}{" " * 12}- {ts}' for ts in tilt_series_unprocessed)}
+        [bold]Tilt series - READY[/bold]: {''.join(f'{nl}{" " * 12}- {ts}' for ts in tilt_series)}
         [bold]Starting from[/bold]: {startfrom}
-        [bold]Run options[/bold]: {''.join(f'{newline}{" " * 12}- {k}: {v}' for k, v in meta_kwargs.items())}
-        [bold]AreTomo options[/bold]: {''.join(f'{newline}{" " * 12}- {k}: {v}' for k, v in aretomo_kwargs.items())}
+        [bold]Run options[/bold]: {''.join(f'{nl}{" " * 12}- {k}: {v}' for k, v in meta_kwargs.items())}
+        [bold]AreTomo options[/bold]: {''.join(f'{nl}{" " * 12}- {k}: {v}' for k, v in aretomo_kwargs.items())}
     ''')))
 
     from .funcs import fix_batch, aretomo_batch, prepare_half_stacks
 
-    if fix:
+    startfrom = ProcessingStep[startfrom]
+
+    if startfrom < ProcessingStep.fix:
         if verbose:
             print('\n[green]Fixing with ccderaser...')
         fix_batch(tilt_series, cmd=ccderaser, **meta_kwargs)
-        in_ext = '_fix'
 
-    if align:
+    if startfrom < ProcessingStep.align:
         if verbose:
             print('\n[green]Aligning and reconstructing with AreTomo...')
         aretomo_batch(
             tilt_series,
-            in_ext=in_ext,
             **aretomo_kwargs,
             **meta_kwargs,
         )
-        in_ext = '_aligned'
 
-    if aretomo_denoise:
-        if verbose:
-            print('\n[green]Preparing half stacks for denoising...')
-        prepare_half_stacks(tilt_series)
-        if verbose:
-            print('\n[green]Reconstructing half tomograms for deonoising...')
-        aretomo_batch(
-            tilt_series,
-            input_ext='_odd',
-            output_ext='_odd',
-            from_aln=True,
-            **aretomo_kwargs,
-            **meta_kwargs,
-        )
+    if startfrom < ProcessingStep.half:
+        for half in ('even', 'odd'):
+            if verbose:
+                print(f'\n[green]Preparing {half} stacks for denoising...')
+                prepare_half_stacks(tilt_series, half=half, **meta_kwargs)
+            if verbose:
+                print(f'\n[green]Reconstructing {half} tomograms for deonoising...')
+                aretomo_batch(
+                    tilt_series,
+                    in_suffix=f'_{half}',
+                    out_suffix=f'_{half}',
+                    from_aln=True,
+                    label='Reconstructing...',
+                    **aretomo_kwargs,
+                    **meta_kwargs,
+                )

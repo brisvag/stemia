@@ -37,11 +37,14 @@ def run_threaded(partials, label='', max_workers=None, dry_run=False, **kwargs):
             thread_to_task[thread.ident] = task
 
         exist = 0
+        errors = []
         for job in futures.as_completed(jobs):
             try:
                 job.result()
             except FileExistsError:
                 exist += 1
+            except subprocess.CalledProcessError as e:
+                errors.append(e)
             bar.update(main_task, advance=1)
 
         for t in bar.tasks:
@@ -49,6 +52,11 @@ def run_threaded(partials, label='', max_workers=None, dry_run=False, **kwargs):
 
         if exist:
             print(f'[red]{exist} files already existed and were not overwritten')
+
+        if errors:
+            print(f'[red]{len(errors)} commands have failed:')
+            for err in errors:
+                print(f'[yellow]{" ".join(err.cmd)}[\yellow] failed with:\n[red]{err.stderr.decode()}')
 
 
 def _ccderaser(input, cmd='ccderaser', dry_run=False, verbose=False, overwrite=False):
@@ -76,8 +84,8 @@ def fix_batch(tilt_series, cmd='ccderaser', **kwargs):
 
 def _aretomo(
     input,
-    in_ext='',
-    out_ext='_aligned',
+    in_suffix='',
+    out_suffix='_aligned',
     cmd='AreTomo',
     gpu=0,
     tilt_axis=0,
@@ -98,8 +106,11 @@ def _aretomo(
 ):
     # cwd dance is necessary cause aretomo messes up paths otherwise
     cwd = input.parent.absolute()
-    rawtlt = input.with_stem(input.stem.removesuffix(in_ext)).with_suffix('.rawtlt').relative_to(cwd)
-    output = input.with_stem(input.stem.removesuffix(in_ext) + out_ext).with_suffix('.mrc').relative_to(cwd)
+    nosuffix = input.stem.removesuffix(in_suffix)
+    rawtlt = input.with_stem(nosuffix).with_suffix('.rawtlt').relative_to(cwd)
+    output = input.with_stem(nosuffix + out_suffix).with_suffix('.mrc').relative_to(cwd)
+    # LogFile is broken, so we do it ourselves
+    log = input.with_suffix('.aretomolog').relative_to(cwd)
     input = input.relative_to(cwd)
     if not overwrite and output.exists():
         raise FileExistsError(output)
@@ -123,9 +134,10 @@ def _aretomo(
     if from_aln:
         # due to a quirk of aretomo, with_suffix is named wrong because all extensions are removed
         # for now, let's just hope a single aln exists
-        aln = next(cwd.glob('*.aln'))
-        if not aln.exists():
-            raise FileNotFoundError(aln)
+        try:
+            aln = next(cwd.glob('*.aln'))
+        except StopIteration:
+            raise FileNotFoundError('could not find aln file')
         options.update({
             # 'AlnFile': input.with_suffix('.aln').relative_to(cwd),
             'AlnFile': aln,
@@ -156,8 +168,6 @@ def _aretomo(
         try:
             proc = subprocess.run(aretomo_cmd.split(), capture_output=True, check=False, cwd=cwd)
         finally:
-            # LogFile is broken, so we do it ourselves
-            log = input.with_suffix('.aretomolog').relative_to(cwd)
             log.write_bytes(proc.stdout + proc.stderr)
             if gpu_queue is not None:
                 gpu_queue.put(gpu)
@@ -166,13 +176,14 @@ def _aretomo(
         sleep(0.1)
 
 
-def aretomo_batch(tilt_series, in_ext='', out_ext='_aligned', label='Aretomoing...', cmd='AreTomo', **kwargs):
+def aretomo_batch(tilt_series, in_suffix='', out_suffix='_aligned', label='Aligning...', cmd='AreTomo', **kwargs):
     if not shutil.which(cmd):
         raise click.UsageError(f'{cmd} is not available on the system')
     gpus = [gpu.id for gpu in GPUtil.getGPUs()]
     if not gpus:
         raise click.UsageError('you need at least one GPU to run AreTomo')
-    print(f'[yellow]Running AreTomo in parallel on {len(gpus)} GPUs.')
+    if kwargs.get('verbose'):
+        print(f'[yellow]Running AreTomo in parallel on {len(gpus)} GPUs.')
 
     # use a queue to hold gpu ids to ensure we only run one job per gpu
     gpu_queue = Queue()
@@ -181,12 +192,12 @@ def aretomo_batch(tilt_series, in_ext='', out_ext='_aligned', label='Aretomoing.
 
     partials = []
     for ts in tilt_series.values():
-        input = ts['stack'].with_stem(ts['stack'].stem + in_ext)
+        input = ts['stack'].with_stem(ts['stack'].stem + in_suffix)
         partials.append(
             lambda: _aretomo(
                 input=input,
-                in_ext=in_ext,
-                out_ext=out_ext,
+                in_suffix=in_suffix,
+                out_suffix=out_suffix,
                 gpu_queue=gpu_queue,
                 cmd=cmd,
                 **ts['aretomo_kwargs'],
@@ -203,7 +214,8 @@ def _stack(images, output, cmd='newstack', dry_run=False, verbose=False, overwri
     stack_cmd = f'{cmd} {" ".join(str(img) for img in images)} {output}'
 
     if verbose:
-        print(stack_cmd)
+        short_cmd = f'{cmd} {images[0]} [...] {images[-1]} {output}'
+        print(short_cmd)
 
     if not dry_run:
         subprocess.run(stack_cmd.split(), capture_output=True, check=True)
@@ -211,12 +223,12 @@ def _stack(images, output, cmd='newstack', dry_run=False, verbose=False, overwri
         sleep(0.1)
 
 
-def prepare_half_stacks(tilt_series, in_ext, cmd='newstack', **kwargs):
+def prepare_half_stacks(tilt_series, half, cmd='newstack', **kwargs):
     if not shutil.which(cmd):
         raise click.UsageError(f'{cmd} is not available on the system')
 
     partials = []
-    for ts, half in product(tilt_series.values(), ('even', 'odd')):
-        output = ts['stack'].with_stem(ts['stack'].stem.removesuffix(in_ext) + f'_{half}')
+    for ts in tilt_series.values():
+        output = ts['stack'].with_stem(ts['stack'].stem + f'_{half}')
         partials.append(lambda: _stack(ts[half], output, cmd=cmd, **kwargs))
-    run_threaded(partials, label='Stacking halves...', **kwargs)
+    run_threaded(partials, label=f'Stacking {half} halves...', **kwargs)
