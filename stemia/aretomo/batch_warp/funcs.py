@@ -5,12 +5,20 @@ import shutil
 import GPUtil
 from queue import Queue
 from concurrent import futures
-from itertools import product
-from rich.progress import Progress
+from rich.progress import Progress, track
 import threading
 import math
 import os
+from pathlib import Path
 from rich import print
+import contextlib
+import pkg_resources
+
+import torch
+import torch.nn as nn
+from topaz.denoise import UDenoiseNet3D
+from topaz.torch import set_num_threads
+from topaz.commands.denoise3d import denoise, set_device
 
 
 def run_threaded(partials, label='', max_workers=None, dry_run=False, **kwargs):
@@ -61,12 +69,11 @@ def run_threaded(partials, label='', max_workers=None, dry_run=False, **kwargs):
                 print(f'[yellow]{" ".join(err.cmd)}[\yellow] failed with:\n[red]{err.stderr.decode()}')
 
 
-def _ccderaser(input, cmd='ccderaser', dry_run=False, verbose=False, overwrite=False):
-    fixed = input.with_stem(input.stem + '_fix')
-    if not overwrite and fixed.exists():
-        raise FileExistsError(fixed)
+def _ccderaser(input, output, cmd='ccderaser', dry_run=False, verbose=False, overwrite=False):
+    if not overwrite and output.exists():
+        raise FileExistsError(output)
     # run ccderaser, defaults from etomo
-    ccderaser_cmd = f'{cmd} -input {input} -output {fixed} -find -peak 8.0 -diff 6.0 -big 19. -giant 12. -large 8. -grow 4. -edge 4'
+    ccderaser_cmd = f'{cmd} -input {input} -output {output} -find -peak 8.0 -diff 6.0 -big 19. -giant 12. -large 8. -grow 4. -edge 4'
 
     if verbose:
         print(ccderaser_cmd)
@@ -80,12 +87,14 @@ def fix_batch(tilt_series, cmd='ccderaser', **kwargs):
     if not shutil.which(cmd):
         raise click.UsageError(f'{cmd} is not available on the system')
 
-    partials = [lambda: _ccderaser(ts['stack'], cmd=cmd, **kwargs) for ts in tilt_series.values()]
+    partials = [lambda: _ccderaser(ts['stack'], ts['fix'], cmd=cmd, **kwargs) for ts in tilt_series]
     run_threaded(partials, label='Fixing...', **kwargs)
 
 
 def _aretomo(
     input,
+    rawtlt,
+    output,
     suffix='',
     cmd='AreTomo',
     gpu=0,
@@ -106,12 +115,14 @@ def _aretomo(
     overwrite=False,
 ):
     # cwd dance is necessary cause aretomo messes up paths otherwise
-    cwd = input.parent.absolute()
-    rawtlt = input.with_stem(input.stem.removesuffix(suffix)).with_suffix('.rawtlt').relative_to(cwd)
-    output = input.with_suffix('.mrc').relative_to(cwd)
+    # need to use os.path.relpath cause pathlib cannot handle non-subpath relative paths
+    # https://stackoverflow.com/questions/38083555/using-pathlibs-relative-to-for-directories-on-the-same-level
+    cwd = output.parent.absolute()
+    input = Path(os.path.relpath(input, cwd))
+    rawtlt = Path(os.path.relpath(rawtlt, cwd))
+    output = Path(os.path.relpath(output, cwd))
     # LogFile is broken, so we do it ourselves
-    log = input.with_suffix('.aretomolog').relative_to(cwd)
-    input = input.relative_to(cwd)
+    log = output.with_suffix('.aretomolog')
     if not overwrite and output.exists():
         raise FileExistsError(output)
 
@@ -135,7 +146,7 @@ def _aretomo(
         # due to a quirk of aretomo, with_suffix is named wrong because all extensions are removed
         # for now, let's just hope a single aln exists
         try:
-            aln = next(cwd.glob('*.aln'))
+            aln = next(input.parent.glob('*.aln'))
         except StopIteration:
             raise FileNotFoundError('could not find aln file')
         options.update({
@@ -152,7 +163,7 @@ def _aretomo(
             'OutXF': 1,
         })
 
-    # only one job per gpu, to make sure
+    # only one job per gpu
     if gpu_queue is None:
         gpu = gpu or 0
     else:
@@ -191,12 +202,12 @@ def aretomo_batch(tilt_series, suffix='', label='Aligning...', cmd='AreTomo', **
         gpu_queue.put(gpu)
 
     partials = []
-    for ts in tilt_series.values():
-        input = ts['stack'].with_stem(ts['stack'].stem + suffix)
+    for ts in tilt_series:
         partials.append(
             lambda: _aretomo(
-                input=input,
-                suffix=suffix,
+                input=ts['stack' + suffix],
+                rawtlt=ts['rawtlt'],
+                output=ts['recon' + suffix],
                 gpu_queue=gpu_queue,
                 cmd=cmd,
                 **ts['aretomo_kwargs'],
@@ -227,16 +238,18 @@ def prepare_half_stacks(tilt_series, half, cmd='newstack', **kwargs):
         raise click.UsageError(f'{cmd} is not available on the system')
 
     partials = []
-    for ts in tilt_series.values():
+    for ts in tilt_series:
         output = ts['stack'].with_stem(ts['stack'].stem + f'_{half}')
         partials.append(lambda: _stack(ts[half], output, cmd=cmd, **kwargs))
     run_threaded(partials, label=f'Stacking {half} halves...', **kwargs)
 
 
-def _topaz(output, even, odd, cmd='topaz', dry_run=False, verbose=False, overwrite=False):
-    if not overwrite and output.exists():
-        raise FileExistsError(output)
-    topaz_cmd = f'{cmd} denoise3d -a {even} -b {odd} -o {output}'
+def _topaz(inputs, output_dir, train=False, even=None, odd=None, cmd='topaz', dry_run=False, verbose=False, overwrite=False):
+    # if not overwrite and output_dir.exists():
+        # raise FileExistsError(output_dir)
+
+    halves = f'-a {even} -b {odd}' if train else ''
+    topaz_cmd = f'{cmd} denoise3d {halves} -o {output_dir} {" ".join(inputs)}'
 
     if verbose:
         print(topaz_cmd)
@@ -247,15 +260,42 @@ def _topaz(output, even, odd, cmd='topaz', dry_run=False, verbose=False, overwri
         sleep(0.1)
 
 
-def topaz_batch(tilt_series, cmd='topaz', **kwargs):
+def topaz_batch(tilt_series, train=False, cmd='topaz', **kwargs):
     if not shutil.which(cmd):
         raise click.UsageError(f'{cmd} is not available on the system')
 
     partials = []
-    for ts in tilt_series.values():
+    for ts in tilt_series:
         st = ts['stack']
         output = st.parent / 'denoise'
         even = st.with_stem(st.stem + '_even').with_suffix('.mrc')
         odd = st.with_stem(st.stem + '_odd').with_suffix('.mrc')
-        partials.append(lambda: _topaz(output, even, odd, cmd=cmd, **kwargs))
+        partials.append(lambda: _topaz(output, even, odd, cmd=cmd, train=train, **kwargs))
     run_threaded(partials, label='Denoising...', **kwargs)
+
+
+def topaz_batch(tilt_series, outdir, train=False, dry_run=False, verbose=False, overwrite=False):
+    set_num_threads(0)
+    model = UDenoiseNet3D(base_width=7)
+    f = pkg_resources.resource_stream('topaz', 'pretrained/denoise/unet-3d-10a-v0.2.4.sav')
+    state_dict = torch.load(f)
+    model.load_state_dict(state_dict)
+    model = nn.DataParallel(model)
+    model.cuda()
+
+    inputs = [ts['recon'] for ts in tilt_series]
+
+    if verbose:
+        print(f'denoising: {inputs[0]} [...] {inputs[-1]}')
+        print(f'output: {outdir}')
+
+    if not dry_run:
+        for path in track(inputs, 'Denoising...'):
+            with contextlib.redirect_stdout(None):
+                denoise(
+                    model=model,
+                    batch_size=torch.cuda.device_count(),
+                    path=path,
+                    outdir=outdir,
+                    suffix='',
+                )
