@@ -28,23 +28,21 @@ def cli(star_file, tilt_angle, tilt_axis, radians, star_output, overwrite):
     click.secho(f'Reading {star_file}...')
     data = starfile.read(star_file, always_dict=True)
 
-    if radians:
-        tilt_angle = np.rad2deg(tilt_angle)
-        tilt_axis = np.rad2deg(tilt_axis)
+    if not radians:
+        tilt_angle = np.deg2rad(tilt_angle)
+        tilt_axis = np.deg2rad(tilt_axis)
 
     click.secho('Calculating angles...')
-    inplane = data['particles']['rlnAnglePsi']
+    inplane = np.deg2rad(data['particles']['rlnAnglePsi'])
     inplane_from_axis = tilt_axis - inplane
-    # sin is max at 90/270 deg
-    multiplier = np.abs(np.sin(np.deg2rad(inplane_from_axis)))
 
     # tilt is max when perpendicular to tilt axis
-    tilt = tilt_angle * multiplier
+    tilt = tilt_angle * np.sin(inplane_from_axis)
     # rot is max when parallel to tilt axis
-    rot = tilt_angle * (1 - multiplier)
+    rot = tilt_angle * np.cos(inplane_from_axis)
 
-    data['particles']['rlnAngleRot'] = rot
-    data['particles']['rlnAngleTilt'] = tilt
+    data['particles']['rlnAngleRot'] = np.rad2deg(rot)
+    data['particles']['rlnAngleTilt'] = np.rad2deg(tilt)
 
     click.secho(f'Writing {star_output}...')
-    starfile.write(data, star_output, overwrite=overwrite)
+    starfile.write(data, star_output, overwrite=overwrite, sep=' ')
