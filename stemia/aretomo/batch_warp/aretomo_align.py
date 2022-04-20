@@ -29,11 +29,12 @@ class ProcessingStep(str, Enum):
 @click.option('-p', '--patches', type=int, default=4, help='number of patches for local alignment in aretomo (NxN)')
 @click.option('-f', '--overwrite', is_flag=True, help='overwrite any previous existing run')
 @click.option('--train', is_flag=True, default=False, help='whether to train a new denosing model')
+@click.option('--topaz-patch-size', type=int, default=32, help='patch size for denoising in topaz.')
 @click.option('--startfrom', type=click.Choice(ProcessingStep.__members__), default='fix',
               help='use outputs from a previous run, starting processing at this step')
 @click.option('--ccderaser', type=str, default='ccderaser', help='command for ccderaser')
 @click.option('--aretomo', type=str, default='AreTomo', help='command for aretomo')
-def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binning, tilt_axis, patches, overwrite, train, startfrom, ccderaser, aretomo):
+def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binning, tilt_axis, patches, overwrite, train, topaz_patch_size, startfrom, ccderaser, aretomo):
     """
     Run aretomo in batch on data preprocessed in warp.
 
@@ -202,4 +203,4 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binni
     if startfrom <= ProcessingStep.denoise:
         if verbose:
             print('\n[green]Denoising tomograms...')
-        topaz_batch(tilt_series, outdir=output_dir, train=train, **meta_kwargs)
+        topaz_batch(tilt_series, outdir=output_dir, train=train, patch_size=topaz_patch_size, **meta_kwargs)

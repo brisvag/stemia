@@ -244,37 +244,7 @@ def prepare_half_stacks(tilt_series, half, cmd='newstack', **kwargs):
     run_threaded(partials, label=f'Stacking {half} halves...', **kwargs)
 
 
-def _topaz(inputs, output_dir, train=False, even=None, odd=None, cmd='topaz', dry_run=False, verbose=False, overwrite=False):
-    # if not overwrite and output_dir.exists():
-        # raise FileExistsError(output_dir)
-
-    halves = f'-a {even} -b {odd}' if train else ''
-    topaz_cmd = f'{cmd} denoise3d {halves} -o {output_dir} {" ".join(inputs)}'
-
-    if verbose:
-        print(topaz_cmd)
-
-    if not dry_run:
-        subprocess.run(topaz_cmd.split(), capture_output=True, check=True)
-    else:
-        sleep(0.1)
-
-
-def topaz_batch(tilt_series, train=False, cmd='topaz', **kwargs):
-    if not shutil.which(cmd):
-        raise click.UsageError(f'{cmd} is not available on the system')
-
-    partials = []
-    for ts in tilt_series:
-        st = ts['stack']
-        output = st.parent / 'denoise'
-        even = st.with_stem(st.stem + '_even').with_suffix('.mrc')
-        odd = st.with_stem(st.stem + '_odd').with_suffix('.mrc')
-        partials.append(lambda: _topaz(output, even, odd, cmd=cmd, train=train, **kwargs))
-    run_threaded(partials, label='Denoising...', **kwargs)
-
-
-def topaz_batch(tilt_series, outdir, train=False, dry_run=False, verbose=False, overwrite=False):
+def topaz_batch(tilt_series, outdir, train=False, patch_size=32, dry_run=False, verbose=False, overwrite=False):
     set_num_threads(0)
     model = UDenoiseNet3D(base_width=7)
     f = pkg_resources.resource_stream('topaz', 'pretrained/denoise/unet-3d-10a-v0.2.4.sav')
@@ -291,11 +261,17 @@ def topaz_batch(tilt_series, outdir, train=False, dry_run=False, verbose=False, 
 
     if not dry_run:
         for path in track(inputs, 'Denoising...'):
-            with contextlib.redirect_stdout(None):
-                denoise(
-                    model=model,
-                    batch_size=torch.cuda.device_count(),
-                    path=path,
-                    outdir=outdir,
-                    suffix='',
-                )
+            try:
+                with contextlib.redirect_stdout(outdir / 'denoise.log'):
+                    denoise(
+                        model=model,
+                        batch_size=torch.cuda.device_count(),
+                        patch_size=patch_size,
+                        path=path,
+                        outdir=outdir,
+                        suffix='',
+                    )
+            except RuntimeError as e:
+                if 'CUDA out of memory.' in e.args[0]:
+                    raise RuntimeError('Not enough GPU memory. Try a lower --topaz-patch-size') from e
+                raise
