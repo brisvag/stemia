@@ -1,1 +1,1 @@
-from .aretomo_align import cli
+from .main import cli
