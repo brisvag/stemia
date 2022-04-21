@@ -45,7 +45,10 @@ def _aretomo(
         try:
             aln = next(input.parent.glob('*.aln'))
         except StopIteration:
-            raise FileNotFoundError('could not find aln file')
+            if dry_run:
+                aln = 'ALN_FILE_DOES_NOT_EXIST_YET'
+            else:
+                raise FileNotFoundError('could not find aln file')
     input = Path(os.path.relpath(input, cwd))
     rawtlt = Path(os.path.relpath(rawtlt, cwd))
     output = Path(os.path.relpath(output, cwd))
