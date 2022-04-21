@@ -90,7 +90,6 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binni
         stop_at = ProcessingStep[stop_at]
 
         steps = {step: start_from <= val <= stop_at for step, val in ProcessingStep.__members__.items()}
-        print(steps)
 
         nl = '\n'
         print(Panel(cleandoc(f'''

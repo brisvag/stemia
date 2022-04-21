@@ -18,7 +18,7 @@ def run_threaded(progress, partials, label='', max_workers=None, dry_run=False, 
 
         tasks = []
         for i, thread in enumerate(executor._threads):
-            tasks.append(progress.add_task(f'thread #{i}...', total=None))
+            tasks.append(progress.add_task(f'thread #{i}...', start=False))
 
         exist = 0
         errors = []
@@ -32,7 +32,7 @@ def run_threaded(progress, partials, label='', max_workers=None, dry_run=False, 
             progress.update(main_task, advance=1)
 
         for t in tasks:
-            progress.update(t, visible=False)
+            progress.update(t, total=1, completed=1, visible=False)
 
         if exist:
             print(f'[red]{exist} files already existed and were not overwritten')
