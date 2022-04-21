@@ -84,6 +84,7 @@ def _aretomo(
             'Patch': f'{patches} {patches}',
             'TiltCor': 1,
             'OutXF': 1,
+            'VolZ': 0,
         })
 
     # only one job per gpu
