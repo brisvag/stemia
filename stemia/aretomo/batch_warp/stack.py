@@ -26,8 +26,8 @@ def prepare_half_stacks(progress, tilt_series, half, cmd='newstack', **kwargs):
     if not shutil.which(cmd):
         raise FileNotFoundError(f'{cmd} is not available on the system')
 
-    partials = []
-    for ts in tilt_series:
-        output = ts['stack'].with_stem(ts['stack'].stem + f'_{half}')
-        partials.append(lambda: _stack(ts[half], output, cmd=cmd, **kwargs))
+    partials = [
+        lambda ts=ts: _stack(ts[half], ts['stack'].with_stem(ts['stack'].stem + f'_{half}'), cmd=cmd, **kwargs)
+        for ts in tilt_series
+    ]
     run_threaded(progress, partials, label=f'Stacking {half} halves...', **kwargs)

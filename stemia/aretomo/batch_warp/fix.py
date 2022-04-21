@@ -25,5 +25,5 @@ def fix_batch(progress, tilt_series, cmd='ccderaser', **kwargs):
     if not shutil.which(cmd):
         raise FileNotFoundError(f'{cmd} is not available on the system')
 
-    partials = [lambda: _ccderaser(ts['stack'], ts['fix'], cmd=cmd, **kwargs) for ts in tilt_series]
+    partials = [lambda ts=ts: _ccderaser(ts['stack'], ts['fix'], cmd=cmd, **kwargs) for ts in tilt_series]
     run_threaded(progress, partials, label='Fixing...', **kwargs)
