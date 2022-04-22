@@ -14,6 +14,7 @@ from .threaded import run_threaded
 def _aretomo(
     input,
     rawtlt,
+    aln,
     output,
     suffix='',
     cmd='AreTomo',
@@ -38,19 +39,9 @@ def _aretomo(
     # need to use os.path.relpath cause pathlib cannot handle non-subpath relative paths
     # https://stackoverflow.com/questions/38083555/using-pathlibs-relative-to-for-directories-on-the-same-level
     cwd = output.parent.absolute()
-    # 'AlnFile': Path(os.path.relpath(aln, cwd))
-    # due to a quirk of aretomo, with_suffix is named wrong because all extensions are removed
-    # for now, let's just hope a single aln exists
-    if reconstruct:
-        try:
-            aln = next(input.parent.glob('*.aln'))
-        except StopIteration:
-            if dry_run:
-                aln = 'ALN_FILE_DOES_NOT_EXIST_YET'
-            else:
-                raise FileNotFoundError('could not find aln file')
     input = Path(os.path.relpath(input, cwd))
     rawtlt = Path(os.path.relpath(rawtlt, cwd))
+    aln = Path(os.path.relpath(aln, cwd))
     output = Path(os.path.relpath(output, cwd))
     if not reconstruct:
         output = output.with_stem(output.stem + '_aligned').with_suffix('.st')
@@ -134,6 +125,7 @@ def aretomo_batch(progress, tilt_series, suffix='', label='', cmd='AreTomo', **k
             lambda ts=ts: _aretomo(
                 input=ts['stack' + suffix],
                 rawtlt=ts['rawtlt'],
+                aln=ts['aln'],
                 output=ts['recon' + suffix],
                 gpu_queue=gpu_queue,
                 cmd=cmd,
