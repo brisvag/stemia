@@ -61,7 +61,7 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binni
         output_dir = warp_dir / 'stemia'
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    with Progress(disable=dry_run) as progress:
+    with Progress() as progress:
         tilt_series, tilt_series_unprocessed = parse_data(
             progress,
             warp_dir,

@@ -8,7 +8,7 @@ def parse_data(progress, warp_dir, mdoc_dir=None, output_dir=None, just=None, tr
     if not imod_dir.exists():
         raise FileNotFoundError('warp directory does not have an `imod` subdirectory')
 
-    if just is not None:
+    if just:
         mdocs = [Path(mdoc_dir) / (ts_name + '.mdoc') for ts_name in just]
     else:
         mdocs = sorted(list(Path(mdoc_dir).glob('*.mdoc')))
