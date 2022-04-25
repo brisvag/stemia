@@ -115,7 +115,7 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binni
             aretomo_batch(
                 progress,
                 tilt_series,
-                label='Aligning...',
+                label='Aligning',
                 **aretomo_kwargs,
                 **meta_kwargs,
             )
@@ -128,7 +128,7 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binni
                 progress,
                 tilt_series,
                 reconstruct=True,
-                label='Reconstructing...',
+                label='Reconstructing',
                 **aretomo_kwargs,
                 **meta_kwargs,
             )
@@ -151,7 +151,7 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binni
                         tilt_series,
                         suffix=f'_{half}',
                         reconstruct=True,
-                        label='Reconstructing halves...',
+                        label='Reconstructing halves',
                         **aretomo_kwargs,
                         **meta_kwargs,
                     )

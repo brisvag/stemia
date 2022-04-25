@@ -26,4 +26,4 @@ def fix_batch(progress, tilt_series, cmd='ccderaser', **kwargs):
         raise FileNotFoundError(f'{cmd} is not available on the system')
 
     partials = [lambda ts=ts: _ccderaser(ts['stack'], ts['fix'], cmd=cmd, **kwargs) for ts in tilt_series]
-    run_threaded(progress, partials, label='Fixing...', **kwargs)
+    run_threaded(progress, partials, label='Fixing', **kwargs)

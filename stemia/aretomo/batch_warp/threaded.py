@@ -9,7 +9,7 @@ def run_threaded(progress, partials, label='', max_workers=None, dry_run=False, 
     max_workers = max_workers or min(32, os.cpu_count() + 4)  # see concurrent docs
 
     with futures.ThreadPoolExecutor(max_workers) as executor:
-        main_task = progress.add_task(label, total=len(partials))
+        main_task = progress.add_task(f'{label}...', total=len(partials))
 
         jobs = []
         for fn in partials:
@@ -35,9 +35,9 @@ def run_threaded(progress, partials, label='', max_workers=None, dry_run=False, 
             progress.update(t, total=1, completed=1, visible=False)
 
         if exist:
-            print(f'[red]{exist} files already existed and were not overwritten')
+            print(f'[red]{label}: {exist} files already exist and were not overwritten')
 
         if errors:
-            print(f'[red]{len(errors)} commands have failed:')
+            print(f'[red]{label}: {len(errors)} commands have failed:')
             for err in errors:
                 print(f'[yellow]{" ".join(err.cmd)}[/yellow] failed with:\n[red]{err.stderr.decode()}')
