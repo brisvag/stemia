@@ -90,6 +90,9 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binni
         stop_at = ProcessingStep[stop_at]
 
         steps = {step: start_from <= val <= stop_at for step, val in ProcessingStep.__members__.items()}
+        if not train:
+            steps['stack_halves'] = False
+            steps['reconstruct_halves'] = False
 
         nl = '\n'
         print(Panel(cleandoc(f'''
@@ -133,28 +136,27 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binni
                 **meta_kwargs,
             )
 
-        if train:
-            if steps['stack_halves']:
-                from .stack import prepare_half_stacks
-                for half in ('even', 'odd'):
-                    if verbose:
-                        print(f'\n[green]Preparing {half} stacks for denoising...')
-                    prepare_half_stacks(progress, tilt_series, half=half, **meta_kwargs)
+        if steps['stack_halves']:
+            from .stack import prepare_half_stacks
+            for half in ('even', 'odd'):
+                if verbose:
+                    print(f'\n[green]Preparing {half} stacks for denoising...')
+                prepare_half_stacks(progress, tilt_series, half=half, **meta_kwargs)
 
-            if steps['reconstruct_halves']:
-                from .aretomo import aretomo_batch
-                for half in ('even', 'odd'):
-                    if verbose:
-                        print(f'\n[green]Reconstructing {half} tomograms for deonoising...')
-                    aretomo_batch(
-                        progress,
-                        tilt_series,
-                        suffix=f'_{half}',
-                        reconstruct=True,
-                        label='Reconstructing halves',
-                        **aretomo_kwargs,
-                        **meta_kwargs,
-                    )
+        if steps['reconstruct_halves']:
+            from .aretomo import aretomo_batch
+            for half in ('even', 'odd'):
+                if verbose:
+                    print(f'\n[green]Reconstructing {half} tomograms for deonoising...')
+                aretomo_batch(
+                    progress,
+                    tilt_series,
+                    suffix=f'_{half}',
+                    reconstruct=True,
+                    label='Reconstructing halves',
+                    **aretomo_kwargs,
+                    **meta_kwargs,
+                )
 
         if steps['denoise']:
             from .topaz import topaz_batch
