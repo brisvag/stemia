@@ -29,7 +29,7 @@ Options:
 ### stemia aretomo batch_warp
 
 ```
-Usage: stemia aretomo batch_warp [OPTIONS] [WARP_DIR]
+Usage: stemia aretomo batch_warp [OPTIONS] WARP_DIR
 
   Run aretomo in batch on data preprocessed in warp.
 
@@ -38,18 +38,34 @@ Usage: stemia aretomo batch_warp [OPTIONS] [WARP_DIR]
   stacks. Some warp xml files may be updated to disable too dark images.
 
 Options:
-  -d, --dry-run               only print some info, without running the
-                              commands
-  -t, --tilt-axis FLOAT       starting tilt axis for AreTomo, if any
-  -f, --overwrite             overwrite any previous existing run
-  --fix / --nofix             run ccderaser to fix the stack
-  --norm / --nonorm           use mrcfile to normalize the images
-  --align / --noalign         run aretomo to produce an alignment
-  --startfrom [raw|fix|norm]  use outputs from a previous run starting from
-                              this step
-  --ccderaser TEXT            command for ccderaser
-  --aretomo TEXT              command for aretomo
-  --help                      Show this message and exit.
+  -m, --mdoc-dir PATH
+  -o, --output-dir PATH           output directory for all the processing. If
+                                  None, defined as warp_dir/aretomo
+  -d, --dry-run                   only print some info, without running the
+                                  commands.
+  -v, --verbose                   print individual commands
+  -j, --just TEXT                 quickly reconstruct just this tomogram with
+                                  a simple setup. Useful for testing and to
+                                  estimate sample thickness
+  -t, --thickness INTEGER         unbinned thickness of the SAMPLE (ice or
+                                  lamella); the reconstruction will be 20%
+                                  thicker, but this will be used for alignment
+  -b, --binning INTEGER           binning for aretomo reconstruction (relative
+                                  to warp binning)
+  -a, --tilt-axis FLOAT           starting tilt axis for AreTomo, if any
+  -p, --patches INTEGER           number of patches for local alignment in
+                                  aretomo (NxN)
+  -f, --overwrite                 overwrite any previous existing run
+  --train                         whether to train a new denosing model
+  --topaz-patch-size INTEGER      patch size for denoising in topaz.
+  --start-from [fix|align|reconstruct|stack_halves|reconstruct_halves|denoise]
+                                  use outputs from a previous run, starting
+                                  processing at this step
+  --stop-at [fix|align|reconstruct|stack_halves|reconstruct_halves|denoise]
+                                  terminate processing after this step
+  --ccderaser TEXT                command for ccderaser
+  --aretomo TEXT                  command for aretomo
+  --help                          Show this message and exit.
 ```
 
 ### stemia aretomo batch
@@ -177,9 +193,7 @@ Usage: stemia warp offset_angle [OPTIONS] [WARP_DIR]
   Offset tilt angles in warp xml files.
 
 Options:
-  -o, --offset INTEGER  The angle that will be considered the new 0 tilt.
-                        [required]
-  --help                Show this message and exit.
+  --help  Show this message and exit.
 ```
 
 ### stemia warp parse_xml
