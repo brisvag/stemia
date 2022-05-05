@@ -13,6 +13,10 @@ def cli(cs_file):
     CS_FILE:
         a .cs file followed by any number of passthrough files
     """
+    import sys
+    if not cs_file:
+        sys.exit()
+
     from functools import reduce
     from inspect import cleandoc
     import numpy as np
