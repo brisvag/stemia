@@ -72,8 +72,8 @@ def parse_data(progress, warp_dir, mdoc_dir=None, output_dir=None, just=None, tr
             'even': even,
             'stack_odd': output_dir / (ts_name + '_odd.st'),
             'stack_even': output_dir / (ts_name + '_even.st'),
-            'recon_odd': output_dir / (ts_name + '_odd.mrc'),
-            'recon_even': output_dir / (ts_name + '_even.mrc'),
+            'recon_odd': output_dir / 'odd' / (ts_name + '.mrc'),
+            'recon_even': output_dir / 'even' / (ts_name + '.mrc'),
             'recon': output_dir / (ts_name + '.mrc'),
             'aretomo_kwargs': {
                 'dose': df.exposure_dose[0],

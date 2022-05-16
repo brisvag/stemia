@@ -148,6 +148,7 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binni
             for half in ('even', 'odd'):
                 if verbose:
                     print(f'\n[green]Reconstructing {half} tomograms for deonoising...')
+                (output_dir / half).mkdir(parents=True, exist_ok=True)
                 aretomo_batch(
                     progress,
                     tilt_series,
