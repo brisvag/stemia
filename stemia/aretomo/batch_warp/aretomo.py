@@ -69,6 +69,7 @@ def _aretomo(
             'Cs': cs,
             'Defoc': defocus,
             'FlipVol': 1,
+            'WBP': 1,
         })
     else:
         options.update({
