@@ -47,6 +47,7 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binni
     """
     from inspect import cleandoc
     from pathlib import Path
+    import shutil
 
     from rich.panel import Panel
     from rich.progress import Progress

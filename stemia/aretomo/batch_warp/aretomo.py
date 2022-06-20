@@ -101,7 +101,10 @@ def _aretomo(
             log.write_bytes(proc.stdout + proc.stderr)
             if gpu_queue is not None:
                 gpu_queue.put(gpu)
-            proc.check_returncode()
+        proc.check_returncode()
+        if not reconstruct:
+            # move xf file so warp can see it (needs full ts name + .xf)
+            shutil.move(aln.with_suffix('.xf'), input.with_suffix('xf'))
     else:
         sleep(0.1)
 
