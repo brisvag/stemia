@@ -20,29 +20,37 @@ def cli(star_file, tilt_angle, tilt_axis, radians, star_output, overwrite):
 
     import numpy as np
     import starfile
+    from scipy.spatial.transform import Rotation
 
     star_output = star_output or Path(star_file).stem + '_tilted.star'
     if Path(star_output).is_file() and not overwrite:
         raise click.UsageError(f'{star_output} exists but "-f" flag was not passed')
 
-    click.secho(f'Reading {star_file}...')
-    data = starfile.read(star_file, always_dict=True)
-
     if not radians:
         tilt_angle = np.deg2rad(tilt_angle)
         tilt_axis = np.deg2rad(tilt_axis)
 
+    click.secho(f'Reading {star_file}...')
+    data = starfile.read(star_file, always_dict=True)
+    # psi becomes rot in 3D
+    rot = np.deg2rad(data['particles']['rlnAnglePsi'])
+
     click.secho('Calculating angles...')
-    inplane = np.deg2rad(data['particles']['rlnAnglePsi'])
-    inplane_from_axis = tilt_axis - inplane
-
+    tiltedness = np.sin(tilt_axis - rot)
     # tilt is max when perpendicular to tilt axis
-    tilt = tilt_angle * np.sin(inplane_from_axis)
-    # rot is max when parallel to tilt axis
-    rot = tilt_angle * np.cos(inplane_from_axis)
+    tilt = tilt_angle * tiltedness
+    # psi is max when parallel to tilt axis
+    psi = tilt_angle * (1 - tiltedness)
 
-    data['particles']['rlnAngleRot'] = np.rad2deg(rot)
-    data['particles']['rlnAngleTilt'] = np.rad2deg(tilt)
+    # rotate 90 degrees rot and tilt to get Z along the filament direction
+    rot -= np.pi / 2
+    tilt -= np.pi / 2
+
+    # non-capitalized for extrinsic, capitalized for intrinsic
+    # we think in terms of extrinsic (rotate particle) but relion works in intrinsic (rotate reference to particle)
+    eulers = Rotation.from_euler('zyz', np.stack([rot, tilt, psi], axis=1)).as_euler('ZYZ', degrees=True)
+
+    data['particles'][['rlnAngleRot', 'rlnAngleTilt', 'rlnAnglePsi']] = eulers
 
     click.secho(f'Writing {star_output}...')
     starfile.write(data, star_output, overwrite=overwrite, sep=' ')
