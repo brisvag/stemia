@@ -82,7 +82,7 @@ Options:
 ### stemia cryosparc csplot
 
 ```
-Usage: stemia cryosparc csplot [OPTIONS] [CS_FILE]...
+Usage: stemia cryosparc csplot [OPTIONS] JOB_DIR
 
   Read cryosparc file(s) and plot interactively any column.
 
