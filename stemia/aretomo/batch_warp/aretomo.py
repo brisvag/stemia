@@ -104,7 +104,7 @@ def _aretomo(
         proc.check_returncode()
         if not reconstruct:
             # move xf file so warp can see it (needs full ts name + .xf)
-            shutil.move(aln.with_suffix('.xf'), input.with_suffix('xf'))
+            shutil.move(aln.with_suffix('.xf'), input.with_suffix('.xf'))
     else:
         sleep(0.1)
 
