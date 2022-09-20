@@ -140,4 +140,4 @@ def aretomo_batch(progress, tilt_series, suffix='', label='', cmd='AreTomo', **k
             )
         )
 
-    run_threaded(progress, partials, label=label, **kwargs)
+    run_threaded(progress, partials, label=label, max_workers=len(gpus), **kwargs)
