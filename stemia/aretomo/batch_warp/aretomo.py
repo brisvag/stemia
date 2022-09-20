@@ -107,6 +107,8 @@ def _aretomo(
             shutil.move(aln.with_suffix('.xf'), input.with_suffix('.xf'))
     else:
         sleep(0.1)
+        if gpu_queue is not None:
+            gpu_queue.put(gpu)
 
 
 def aretomo_batch(progress, tilt_series, suffix='', label='', cmd='AreTomo', **kwargs):
