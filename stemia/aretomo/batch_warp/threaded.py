@@ -5,7 +5,7 @@ import subprocess
 from rich import print
 
 
-def run_threaded(progress, partials, label='', max_workers=None, dry_run=False, **kwargs):
+def run_threaded(progress, partials, label='', max_workers=None, dry_run=False, verbose=False, **kwargs):
     max_workers = max_workers or min(32, os.cpu_count() + 4)  # see concurrent docs
 
     with futures.ThreadPoolExecutor(max_workers) as executor:
@@ -29,6 +29,8 @@ def run_threaded(progress, partials, label='', max_workers=None, dry_run=False, 
                 exist += 1
             except subprocess.CalledProcessError as e:
                 errors.append(e)
+                if verbose:
+                    print(e)
             progress.update(main_task, advance=1)
 
         for t in tasks:
