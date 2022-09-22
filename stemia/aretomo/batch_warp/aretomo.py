@@ -56,8 +56,9 @@ def _aretomo(
         output = output.with_stem(output.stem + '_aligned').with_suffix('.st')
     # LogFile is broken, so we do it ourselves
     log = output.with_suffix('.aretomolog')
-    if not overwrite and output.exists():
-        raise FileExistsError(output)
+    with cd(cwd):
+        if not overwrite and output.exists():
+            raise FileExistsError(output)
 
     options = {
         'InMrc': input,
