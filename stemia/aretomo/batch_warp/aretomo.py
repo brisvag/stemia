@@ -104,17 +104,16 @@ def _aretomo(
         print(aretomo_cmd)
 
     if not dry_run:
-        try:
-            with cd(cwd):
+        with cd(cwd):
+            try:
                 proc = subprocess.run(aretomo_cmd.split(), capture_output=True, check=False, cwd=cwd)
-        finally:
-            log.write_bytes(proc.stdout + proc.stderr)
-            if gpu_queue is not None:
-                gpu_queue.put(gpu)
-        proc.check_returncode()
-        if not reconstruct:
-            # move xf file so warp can see it (needs full ts name + .xf)
-            with cd(cwd):
+            finally:
+                log.write_bytes(proc.stdout + proc.stderr)
+                if gpu_queue is not None:
+                    gpu_queue.put(gpu)
+            proc.check_returncode()
+            if not reconstruct:
+                # move xf file so warp can see it (needs full ts name + .xf)
                 shutil.move(aln.with_suffix('.xf'), input.with_suffix('.xf'))
     else:
         sleep(0.1)
