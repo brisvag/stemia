@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from contextlib import contextmanager
 from queue import Queue
 from time import sleep
 import subprocess
@@ -9,6 +10,14 @@ import GPUtil
 from rich import print
 
 from .threaded import run_threaded
+
+
+@contextmanager
+def cd(dir):
+    prev = os.getcwd()
+    os.chdir(dir)
+    yield
+    os.chdir(prev)
 
 
 def _aretomo(
@@ -96,7 +105,8 @@ def _aretomo(
 
     if not dry_run:
         try:
-            proc = subprocess.run(aretomo_cmd.split(), capture_output=True, check=False, cwd=cwd)
+            with cd(cwd):
+                proc = subprocess.run(aretomo_cmd.split(), capture_output=True, check=False, cwd=cwd)
         finally:
             log.write_bytes(proc.stdout + proc.stderr)
             if gpu_queue is not None:
@@ -104,7 +114,8 @@ def _aretomo(
         proc.check_returncode()
         if not reconstruct:
             # move xf file so warp can see it (needs full ts name + .xf)
-            shutil.move(aln.with_suffix('.xf'), input.with_suffix('.xf'))
+            with cd(cwd):
+                shutil.move(aln.with_suffix('.xf'), input.with_suffix('.xf'))
     else:
         sleep(0.1)
         if gpu_queue is not None:
