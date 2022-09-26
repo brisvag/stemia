@@ -115,7 +115,9 @@ def _aretomo(
             proc.check_returncode()
             if not reconstruct:
                 # move xf file so warp can see it (needs full ts name + .xf)
-                shutil.move(aln.with_suffix('.xf'), input.with_suffix('.xf'))
+                # FIXME: currently bvroken for some reason, do manually
+                # shutil.move(aln.with_suffix('.xf'), input.with_suffix('.xf'))
+                pass
     else:
         sleep(0.1)
         if gpu_queue is not None:

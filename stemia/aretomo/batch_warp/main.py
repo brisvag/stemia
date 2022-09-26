@@ -154,7 +154,7 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binni
                     tilt_series,
                     suffix=f'_{half}',
                     reconstruct=True,
-                    label='Reconstructing halves',
+                    label=f'Reconstructing {half} halves',
                     **aretomo_kwargs,
                     **meta_kwargs,
                 )
