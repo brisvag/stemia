@@ -66,7 +66,8 @@ def find_cs_files(job_dir):
 
     for parent in job['parents']:
         update(files, find_cs_files(job_dir.parent / parent))
-        if all(f for dct in files.values() for file in dct.values()):
+        if all(file_set for dct in files.values() for file_set in dct.values()):
+            # found everything we need
             break
 
     return files
