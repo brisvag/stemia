@@ -1,3 +1,4 @@
+import re
 import numpy as np
 import pandas as pd
 import json
@@ -5,7 +6,7 @@ from pathlib import Path
 import warnings
 
 
-def find_cs_files(job_dir):
+def find_cs_files(job_dir, sets=None):
     """
     Recursively explore a job directory to find all the relevant cs files.
 
@@ -36,10 +37,12 @@ def find_cs_files(job_dir):
         k2 = 'passthrough' if passthrough else 'cs'
         if j_type == 'hetero_refine':
             # hetero refine is special because the "good" output is split into multiple files
-            if not passthrough and 'particles_class_' in output['group_name']:
+            if (not passthrough and 'particles_class_' in output['group_name']) or (passthrough and output['group_name'] == 'particles_all_classes'):
                 files['particles'][k2].add(job_dir.parent / metafiles[-1])
-            elif passthrough and output['group_name'] == 'particles_all_classes':
-                files['particles'][k2].add(job_dir.parent / metafiles[-1])
+        elif j_type == 'particle_sets':
+            if (matched := re.search(r'split_(\d+)', output['group_name'])) is not None:
+                if sets is None or int(matched[1]) in sets:
+                    files['particles'][k2].add(job_dir.parent / metafiles[-1])
         else:
             # every remaining job type is covered by this generic loop
             for file in metafiles:
