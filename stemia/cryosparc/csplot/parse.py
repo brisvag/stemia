@@ -41,7 +41,7 @@ def find_cs_files(job_dir, sets=None):
                 files['particles'][k2].add(job_dir.parent / metafiles[-1])
         elif j_type == 'particle_sets':
             if (matched := re.search(r'split_(\d+)', output['group_name'])) is not None:
-                if sets is None or int(matched[1]) in sets:
+                if sets is None or int(matched[1]) in [int(s) for s in sets]:
                     files['particles'][k2].add(job_dir.parent / metafiles[-1])
         else:
             # every remaining job type is covered by this generic loop
