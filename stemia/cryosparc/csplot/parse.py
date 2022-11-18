@@ -103,7 +103,7 @@ def read_cs_file(cs_file):
     return df
 
 
-def load_job_data(job_dir):
+def load_job_data(job_dir, particles=True, micrographs=True):
     """
     Read a cryosparc job directory into a pandas dataframe
 
@@ -115,22 +115,30 @@ def load_job_data(job_dir):
     if not files['particles']['cs'] and not files['micrographs']['cs']:
         return pd.DataFrame()
 
-    part_data = [read_cs_file(part) for part in files['particles']['cs']]
-    part_passthrough = [read_cs_file(part) for part in files['particles']['passthrough']]
-    mic_data = [read_cs_file(mic) for mic in files['micrographs']['cs']]
-    mic_passthrough = [read_cs_file(mic) for mic in files['micrographs']['passthrough']]
+    part_df = None
+    mic_df = None
 
-    part_df = pd.concat(part_data, ignore_index=True)
-    if part_passthrough:
-        for pst in part_passthrough:
-            part_df = pd.merge(part_df, pst, on='uid')
+    if particles:
+        part_data = [read_cs_file(part) for part in files['particles']['cs']]
+        part_passthrough = [read_cs_file(part) for part in files['particles']['passthrough']]
 
-    mic_df = pd.concat(mic_data, ignore_index=True)
-    if mic_passthrough:
-        for pst in mic_passthrough:
-            mic_df = pd.merge(mic_df, pst, on='uid')
+        part_df = pd.concat(part_data, ignore_index=True)
+        if part_passthrough:
+            for pst in part_passthrough:
+                part_df = pd.merge(part_df, pst, on='uid')
 
-    mic_df.rename(columns={'uid': 'location/micrograph_uid'}, inplace=True)
-    df = pd.merge(part_df, mic_df, on='location/micrograph_uid')
+    if micrographs:
+        mic_data = [read_cs_file(mic) for mic in files['micrographs']['cs']]
+        mic_passthrough = [read_cs_file(mic) for mic in files['micrographs']['passthrough']]
 
-    return df
+        mic_df = pd.concat(mic_data, ignore_index=True)
+        if mic_passthrough:
+            for pst in mic_passthrough:
+                mic_df = pd.merge(mic_df, pst, on='uid')
+
+        if part_df is not None:
+            mic_df.rename(columns={'uid': 'location/micrograph_uid'}, inplace=True)
+            return pd.merge(part_df, mic_df, on='location/micrograph_uid')
+        return mic_df
+
+    return part_df
