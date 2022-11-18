@@ -23,6 +23,7 @@ def find_cs_files(job_dir, sets=None):
             'passthrough': set(),
         },
     }
+    job_dir = Path(job_dir).absolute()
     try:
         with open(job_dir / 'job.json', 'r') as f:
             job = json.load(f)
@@ -76,26 +77,29 @@ def find_cs_files(job_dir, sets=None):
     return files
 
 
+def recarray_to_flat_dataframe(recarray, column_name=None):
+    columns = []
+    if recarray.dtype.fields is not None:
+        for col in recarray.dtype.names:
+            data = recarray_to_flat_dataframe(recarray[col], column_name=col)
+            columns.append(data)
+    elif recarray.ndim == 2:
+        for idx, subcolumn in enumerate(recarray.T):
+            columns.append(pd.Series(name=f'{column_name}_{idx}', data=subcolumn))
+    else:
+        columns.append(pd.Series(name=column_name, data=recarray, dtype=recarray.dtype))
+
+    return pd.concat(columns, axis=1)
+
+
 def read_cs_file(cs_file):
     data = np.load(cs_file)
-    df = pd.DataFrame(data.tolist(), columns=data.dtype.names)
-    cols = []
+    df = recarray_to_flat_dataframe(data)
+    # convert bytes to strings
     for col in df.columns:
-        # check first element for the rest
         el = df[col].iloc[0]
-        if isinstance(el, np.ndarray):
-            # split columns and add index at the end (e.g: pose_0, pose_1, pose_2)
-            split_col = pd.DataFrame(
-                df[col].tolist(),
-                columns=[f'{col}_{i}' for i in range(len(el))]
-            )
-            cols.append(split_col)
-        elif isinstance(el, bytes):
-            cols.append(df[col].str.decode('utf-8'))
-        else:
-            cols.append(df[col])
-    # stitch them back together
-    df = pd.concat(cols, axis=1)
+        if isinstance(el, bytes):
+            df[col] = df[col].str.decode('utf-8')
     return df
 
 
