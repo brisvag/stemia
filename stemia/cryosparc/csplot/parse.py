@@ -6,6 +6,13 @@ from pathlib import Path
 import warnings
 
 
+def update_dict(d1, d2):
+    for k1, v in d1.items():
+        for k2 in v:
+            if not d1[k1][k2]:
+                d1[k1][k2].update(d2[k1][k2])
+
+
 def find_cs_files(job_dir, sets=None):
     """
     Recursively explore a job directory to find all the relevant cs files.
@@ -62,14 +69,19 @@ def find_cs_files(job_dir, sets=None):
                 for k in dct:
                     dct[k] = set(sorted(dct[k])[-1:])
 
-    def update(d1, d2):
-        for k1, v in d1.items():
-            for k2 in v:
-                if not d1[k1][k2]:
-                    d1[k1][k2].update(d2[k1][k2])
+    # remove non-existing files
+    for dct in files.values():
+        for kind, file_set in dct.items():
+            for f in list(file_set):
+                if not f.exists():
+                    warnings.warn(
+                        'the following file was supposed to contain relevant information, '
+                        f'but does not exist:\n{f}'
+                    )
+                    file_set.remove(f)
 
     for parent in job['parents']:
-        update(files, find_cs_files(job_dir.parent / parent))
+        update_dict(files, find_cs_files(job_dir.parent / parent))
         if all(file_set for dct in files.values() for file_set in dct.values()):
             # found everything we need
             break
@@ -89,18 +101,20 @@ def recarray_to_flat_dataframe(recarray, column_name=None):
     else:
         columns.append(pd.Series(name=column_name, data=recarray, dtype=recarray.dtype))
 
-    return pd.concat(columns, axis=1)
+    df = pd.concat(columns, axis=1)
 
-
-def read_cs_file(cs_file):
-    data = np.load(cs_file)
-    df = recarray_to_flat_dataframe(data)
     # convert bytes to strings
     for col in df.columns:
         el = df[col].iloc[0]
         if isinstance(el, bytes):
             df[col] = df[col].str.decode('utf-8')
+
     return df
+
+
+def read_cs_file(cs_file):
+    data = np.load(cs_file)
+    return recarray_to_flat_dataframe(data)
 
 
 def load_job_data(job_dir, particles=True, micrographs=True):
