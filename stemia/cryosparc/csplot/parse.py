@@ -114,10 +114,11 @@ def recarray_to_flat_dataframe(recarray, column_name=None):
 
 def read_cs_file(cs_file):
     data = np.load(cs_file)
-    return recarray_to_flat_dataframe(data)
+    # convert dtypes ensure we allow NaN with stuff like integers
+    return recarray_to_flat_dataframe(data).convert_dtypes()
 
 
-def load_job_data(job_dir, particles=True, micrographs=True):
+def load_job_data(job_dir, particles=True, micrographs=True, drop_na=False):
     """
     Read a cryosparc job directory into a pandas dataframe
 
@@ -131,6 +132,7 @@ def load_job_data(job_dir, particles=True, micrographs=True):
 
     part_df = None
     mic_df = None
+    df = None
 
     if particles:
         part_data = [read_cs_file(part) for part in files['particles']['cs']]
@@ -144,6 +146,8 @@ def load_job_data(job_dir, particles=True, micrographs=True):
                 pst.drop(columns=to_drop, errors='ignore', inplace=True)
                 part_df = pd.merge(part_df, pst, on='uid', how='outer')
 
+        df = part_df
+
     if micrographs:
         mic_data = [read_cs_file(mic) for mic in files['micrographs']['cs']]
         mic_passthrough = [read_cs_file(mic) for mic in files['micrographs']['passthrough']]
@@ -156,12 +160,20 @@ def load_job_data(job_dir, particles=True, micrographs=True):
                 pst.drop(columns=to_drop, errors='ignore', inplace=True)
                 mic_df = pd.merge(mic_df, pst, on='uid', how='outer')
 
+        mic_df.rename(columns={'uid': 'location/micrograph_uid'}, inplace=True)
+
         if part_df is not None:
             # need to rename or we have conflict with particle uid field
-            mic_df.rename(columns={'uid': 'location/micrograph_uid'}, inplace=True)
             to_drop = [col for col in part_df.columns if not col == 'location/micrograph_uid']
             mic_df.drop(columns=to_drop, errors='ignore', inplace=True)
-            return pd.merge(part_df, mic_df, on='location/micrograph_uid', how='outer')
-        return mic_df
+            mic_df = pd.merge(part_df, mic_df, on='location/micrograph_uid', how='outer')
 
-    return part_df
+        df = mic_df
+
+    # discard rows with no particles or no micrographs
+    if drop_na and df is not None:
+        no_parts = pd.isna(df.get('uid', np.array(False)))
+        no_mics = pd.isna(df.get('location/micrograph_uid', np.array(False)))
+        df = df[~(no_parts | no_mics)]
+
+    return df
