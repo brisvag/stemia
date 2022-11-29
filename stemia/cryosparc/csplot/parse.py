@@ -139,7 +139,10 @@ def load_job_data(job_dir, particles=True, micrographs=True):
         part_df = pd.concat(part_data, ignore_index=True)
         if part_passthrough:
             for pst in part_passthrough:
-                part_df = pd.merge(part_df, pst, on='uid')
+                # keep only most recent data (non-passthrough)
+                to_drop = [col for col in part_df.columns if not col == 'uid']
+                pst.drop(columns=to_drop, errors='ignore', inplace=True)
+                part_df = pd.merge(part_df, pst, on='uid', how='outer')
 
     if micrographs:
         mic_data = [read_cs_file(mic) for mic in files['micrographs']['cs']]
@@ -148,11 +151,17 @@ def load_job_data(job_dir, particles=True, micrographs=True):
         mic_df = pd.concat(mic_data, ignore_index=True)
         if mic_passthrough:
             for pst in mic_passthrough:
-                mic_df = pd.merge(mic_df, pst, on='uid')
+                # keep only most recent data (non-passthrough)
+                to_drop = [col for col in mic_df.columns if not col == 'uid']
+                pst.drop(columns=to_drop, errors='ignore', inplace=True)
+                mic_df = pd.merge(mic_df, pst, on='uid', how='outer')
 
         if part_df is not None:
+            # need to rename or we have conflict with particle uid field
             mic_df.rename(columns={'uid': 'location/micrograph_uid'}, inplace=True)
-            return pd.merge(part_df, mic_df, on='location/micrograph_uid')
+            to_drop = [col for col in part_df.columns if not col == 'location/micrograph_uid']
+            mic_df.drop(columns=to_drop, errors='ignore', inplace=True)
+            return pd.merge(part_df, mic_df, on='location/micrograph_uid', how='outer')
         return mic_df
 
     return part_df
