@@ -84,15 +84,19 @@ Options:
 ```
 Usage: stemia cryosparc csplot [OPTIONS] JOB_DIR
 
-  Read cryosparc file(s) and plot interactively any column.
+  Read a cryosparc job directory and plot interactively any column.
 
-  An interactive ipython shell will be opened with data loaded into a pandas
-  dataframe.
+  All the related data from parent jobs will also be loaded. An interactive
+  ipython shell will be opened with data loaded into a pandas dataframe.
 
-  CS_FILE:     a .cs file followed by any number of passthrough files
+  JOB_DIR:     a cryosparc job directory.
 
 Options:
-  --help  Show this message and exit.
+  --drop-na         drop rows that contain NaN values (e.g: micrographs with
+                    no particles)
+  --no-particles    do not read particles data
+  --no-micrographs  do not read micrographs data
+  --help            Show this message and exit.
 ```
 
 ### stemia cryosparc generate_tilt_angles
@@ -137,6 +141,25 @@ Options:
   -n, --n-filaments INTEGER     number of filaments on the image  [default: 2]
   -p, --percentile INTEGER      percentile for binarisation  [default: 85]
   --help                        Show this message and exit.
+```
+
+### stemia image extract_z_snapshots
+
+```
+Usage: stemia image extract_z_snapshots [OPTIONS] [INPUTS]...
+
+  Grab z slices at regular intervals from a tomogram as jpg images.
+
+  INPUTS: any number of paths of volume images
+
+Options:
+  -o, --output-dir PATH
+  -s, --slices INTEGER   number of equidistant slices to extract
+  --keep-extrema         whether to keep slices at z=0 and z=-1 (if false,
+                         slices is reduced by 2)
+  --average INTEGER      number of slices to average over
+  --axis INTEGER         axis along which to do the slicing
+  --help                 Show this message and exit.
 ```
 
 ### stemia image flip_z
@@ -224,6 +247,11 @@ Options:
 Usage: stemia warp summarize [OPTIONS] [WARP_DIR]
 
   Summarize the state of a Warp project.
+
+  Reports for each tilt series: - discarded: number of discarded tilts -
+  total: total number oftilts in raw data - stacked: number of image slices in
+  imod output directory - mismatch: whether stacked != (total - discarded) -
+  resolution: estimated resolution if processed
 
 Options:
   --help  Show this message and exit.
