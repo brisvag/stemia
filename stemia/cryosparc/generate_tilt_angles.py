@@ -26,29 +26,25 @@ def cli(star_file, tilt_angle, tilt_axis, radians, star_output, overwrite):
     if Path(star_output).is_file() and not overwrite:
         raise click.UsageError(f'{star_output} exists but "-f" flag was not passed')
 
-    if not radians:
-        tilt_angle = np.deg2rad(tilt_angle)
-        tilt_axis = np.deg2rad(tilt_axis)
-
     click.secho(f'Reading {star_file}...')
     data = starfile.read(star_file, always_dict=True)
-    # psi becomes rot in 3D
-    rot = np.deg2rad(data['particles']['rlnAnglePsi'])
 
-    click.secho('Calculating angles...')
-    tiltedness = np.sin(tilt_axis - rot)
-    # tilt is max when perpendicular to tilt axis
-    tilt = tilt_angle * tiltedness
-    # psi is max when parallel to tilt axis
-    psi = tilt_angle * (1 - tiltedness)
+    psi = np.deg2rad(data['particles']['rlnAnglePsi'])
+    tilt = np.repeat(np.pi / 2, len(psi))
+    rot = np.zeros(len(psi))
 
-    # rotate 90 degrees rot and tilt to get Z along the filament direction
-    rot -= np.pi / 2
-    tilt -= np.pi / 2
+    rotation = Rotation.from_euler('ZYZ', np.stack([rot, tilt, psi], axis=1))
 
-    # non-capitalized for extrinsic, capitalized for intrinsic
-    # we think in terms of extrinsic (rotate particle) but relion works in intrinsic (rotate reference to particle)
-    eulers = Rotation.from_euler('zyz', np.stack([rot, tilt, psi], axis=1)).as_euler('ZYZ', degrees=True)
+    if not radians:
+        tilt_axis = np.deg2rad(tilt_axis)
+        tilt_angle = np.deg2rad(tilt_angle)
+
+    tilt_axis += np.pi / 2
+
+    rotvec = np.array([np.cos(tilt_axis), np.sin(tilt_axis), 0]) * tilt_angle
+
+    rot_around_axis = Rotation.from_rotvec(rotvec)
+    eulers = (rotation * rot_around_axis).as_euler('ZYZ', degrees=True)
 
     data['particles'][['rlnAngleRot', 'rlnAngleTilt', 'rlnAnglePsi']] = eulers
 
