@@ -29,7 +29,7 @@ def cli(star_file, tilt_angle, tilt_axis, radians, star_output, overwrite):
     click.secho(f'Reading {star_file}...')
     data = starfile.read(star_file, always_dict=True)
 
-    psi = np.deg2rad(data['particles']['rlnAnglePsiPrior'])
+    psi = np.deg2rad(data['particles']['rlnAnglePsi'])
     tilt = np.repeat(np.pi / 2, len(psi))
     rot = np.zeros(len(psi))
 
@@ -47,6 +47,7 @@ def cli(star_file, tilt_angle, tilt_axis, radians, star_output, overwrite):
     eulers = (rotation * rot_around_axis).as_euler('ZYZ', degrees=True)
 
     data['particles'][['rlnAngleRot', 'rlnAngleTilt', 'rlnAnglePsi']] = eulers
+    data['particles'][['rlnAngleRotPrior', 'rlnAngleTiltPrior', 'rlnAnglePsiPrior']] = eulers
 
     click.secho(f'Writing {star_output}...')
     starfile.write(data, star_output, overwrite=overwrite, sep=' ')
