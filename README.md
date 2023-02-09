@@ -216,12 +216,13 @@ Options:
 ### stemia warp fix_mdoc
 
 ```
-Usage: stemia warp fix_mdoc [OPTIONS] DATA_DIR
+Usage: stemia warp fix_mdoc [OPTIONS] MDOC_DIR
 
   Fix mdoc files to point to the right data.
 
 Options:
-  --help  Show this message and exit.
+  -d, --data-dir PATH
+  --help               Show this message and exit.
 ```
 
 ### stemia warp offset_angle
