@@ -24,7 +24,7 @@ def parse_data(progress, warp_dir, mdoc_dir=None, output_dir=None, just=None, tr
 
     for mdoc in progress.track(mdocs, description='Reading mdocs...'):
         df = mdocfile.read(mdoc)
-        ts_name = df.image_file[0].name
+        ts_name = mdoc.stem
         stack = imod_dir / ts_name / (ts_name + '.st')
 
         # skip if not preprocessed in warp
@@ -33,7 +33,7 @@ def parse_data(progress, warp_dir, mdoc_dir=None, output_dir=None, just=None, tr
             continue
 
         # extract even/odd paths
-        tilts = [warp_dir / PureWindowsPath(tilt).name for tilt in df.sub_frame_path]
+        tilts = [warp_dir / PureWindowsPath(tilt).name for tilt in df.SubFramePath]
         odd = []
         even = []
         for tilt in tilts:
@@ -76,8 +76,8 @@ def parse_data(progress, warp_dir, mdoc_dir=None, output_dir=None, just=None, tr
             'recon_even': output_dir / 'even' / (ts_name + '.mrc'),
             'recon': output_dir / (ts_name + '.mrc'),
             'aretomo_kwargs': {
-                'dose': df.exposure_dose[0],
-                'px_size': df.pixel_spacing[0] * 2**bin,
+                'dose': df.ExposureDose[0],
+                'px_size': df.PixelSpacing[0] * 2**bin,
                 'cs': cs,
                 'kv': kv,
                 'defocus': defocus,
