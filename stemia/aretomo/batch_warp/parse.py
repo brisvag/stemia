@@ -36,13 +36,18 @@ def parse_data(progress, warp_dir, mdoc_dir=None, output_dir=None, just=None, tr
         tilts = [warp_dir / PureWindowsPath(tilt).name for tilt in df.SubFramePath]
         odd = []
         even = []
+        valid_xml = None
         for tilt in tilts:
             xml = ElementTree.parse(tilt.with_suffix('.xml')).getroot()
             if xml.attrib['UnselectManual'] == 'True':
                 continue
 
+            valid_xml = xml
             odd.append(odd_dir / (tilt.stem + '.mrc'))
             even.append(even_dir / (tilt.stem + '.mrc'))
+
+        if valid_xml is None:
+            continue
 
         if train:
             for img in odd + even:
@@ -50,7 +55,7 @@ def parse_data(progress, warp_dir, mdoc_dir=None, output_dir=None, just=None, tr
                     raise FileNotFoundError(img)
 
         # extract metadata from warp xmls (we assume the last xml has the same data as the others)
-        for param in xml.find('OptionsCTF'):
+        for param in valid_xml.find('OptionsCTF'):
             if param.get('Name') == 'BinTimes':
                 bin = float(param.get('Value'))
             elif param.get('Name') == 'Voltage':
