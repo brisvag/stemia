@@ -99,6 +99,22 @@ Options:
   --help            Show this message and exit.
 ```
 
+### stemia cryosparc fix_filament_ids
+
+```
+Usage: stemia cryosparc fix_filament_ids [OPTIONS] STAR_FILE
+
+  Replace cryosparc filament ids with small unique integers.
+
+  Relion will fail with cryosparc IDs because of overflows.
+
+Options:
+  -o, --star-output FILE  where to put the updated version of the star file
+                          [default: <STAR_FILE>_fixed_id.star]
+  -f, --overwrite         overwrite output if exists
+  --help                  Show this message and exit.
+```
+
 ### stemia cryosparc generate_tilt_angles
 
 ```
