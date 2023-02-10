@@ -71,7 +71,7 @@ def parse_data(progress, warp_dir, mdoc_dir=None, output_dir=None, just=None, tr
             'stack': stack,
             'rawtlt': stack.with_suffix('.rawtlt'),
             # due to a quirk of aretomo, with_suffix is named wrong because all extensions are removed
-            'aln': output_dir / (ts_name.partition('.')[0] + '.aln'),
+            'aln': output_dir / (stack.name + '.aln'),
             'fix': output_dir / (ts_name + '_fix.st'),
             'odd': odd,
             'even': even,
