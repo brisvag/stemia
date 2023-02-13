@@ -142,7 +142,7 @@ def aretomo_batch(progress, tilt_series, suffix='', label='', cmd='AreTomo', **k
     for ts in tilt_series:
         partials.append(
             lambda ts=ts: _aretomo(
-                input=ts['stack' + suffix],
+                input=ts['stack' + suffix] if suffix else ts['fix'],
                 rawtlt=ts['rawtlt'],
                 aln=ts['aln'],
                 output=ts['recon' + suffix],
