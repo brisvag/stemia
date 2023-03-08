@@ -258,6 +258,25 @@ Options:
   --help  Show this message and exit.
 ```
 
+### stemia warp spoof_mdoc
+
+```
+Usage: stemia warp spoof_mdoc [OPTIONS] [RAWTLT_FILES]...
+
+  Create dummy mdocs for warp.
+
+  RAWTLT_FILES: simple file with one tilt angle per line. Order should match
+  sorted filenames.
+
+Options:
+  -d, --dose-per-image FLOAT  electron dose per tilt image (or per frame if
+                              inputs are movies)  [required]
+  -p, --pixel-size FLOAT
+  -e, --extension [tif|mrc]
+  -f, --overwrite
+  --help                      Show this message and exit.
+```
+
 ### stemia warp summarize
 
 ```
