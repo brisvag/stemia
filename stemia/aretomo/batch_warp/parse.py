@@ -3,13 +3,13 @@ import mdocfile
 from xml.etree import ElementTree
 
 
-def parse_data(progress, warp_dir, mdoc_dir=None, output_dir=None, just=None, train=False):
+def parse_data(progress, warp_dir, mdoc_dir, output_dir, just=(), exclude=(), train=False):
     imod_dir = warp_dir / 'imod'
     if not imod_dir.exists():
         raise FileNotFoundError('warp directory does not have an `imod` subdirectory')
 
     if just:
-        mdocs = [Path(mdoc_dir) / (ts_name + '.mdoc') for ts_name in just]
+        mdocs = [p for ts_name in just if (p := (Path(mdoc_dir) / (ts_name + '.mdoc'))).exists()]
     else:
         mdocs = sorted(list(Path(mdoc_dir).glob('*.mdoc')))
 
@@ -20,17 +20,22 @@ def parse_data(progress, warp_dir, mdoc_dir=None, output_dir=None, just=None, tr
     even_dir = warp_dir / 'average' / 'even'
 
     tilt_series = []
+    tilt_series_excluded = []
     tilt_series_unprocessed = []
 
     for mdoc in progress.track(mdocs, description='Reading mdocs...'):
-        df = mdocfile.read(mdoc)
         ts_name = mdoc.stem
         stack = imod_dir / ts_name / (ts_name + '.st')
 
+        if ts_name in exclude:
+            tilt_series_excluded.append(ts_name)
+            continue
         # skip if not preprocessed in warp
         if not stack.exists():
             tilt_series_unprocessed.append(ts_name)
             continue
+
+        df = mdocfile.read(mdoc)
 
         # extract even/odd paths
         tilts = [warp_dir / PureWindowsPath(tilt).name for tilt in df.SubFramePath]
@@ -89,4 +94,4 @@ def parse_data(progress, warp_dir, mdoc_dir=None, output_dir=None, just=None, tr
             }
         })
 
-    return tilt_series, tilt_series_unprocessed
+    return tilt_series, tilt_series_excluded, tilt_series_unprocessed
