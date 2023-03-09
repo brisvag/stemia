@@ -44,9 +44,8 @@ Options:
   -d, --dry-run                   only print some info, without running the
                                   commands.
   -v, --verbose                   print individual commands
-  -j, --just TEXT                 quickly reconstruct just this tomogram with
-                                  a simple setup. Useful for testing and to
-                                  estimate sample thickness
+  -j, --just TEXT                 reconstruct just these tomograms
+  -e, --exclude TEXT              exclude these tomograms from the run
   -t, --thickness INTEGER         unbinned thickness of the SAMPLE (ice or
                                   lamella); the reconstruction will be 20%
                                   thicker, but this will be used for alignment
@@ -65,6 +64,8 @@ Options:
                                   terminate processing after this step
   --ccderaser TEXT                command for ccderaser
   --aretomo TEXT                  command for aretomo
+  --gpus TEXT                     Comma separated list of gpus to use for
+                                  aretomo. Default to all.
   --help                          Show this message and exit.
 ```
 

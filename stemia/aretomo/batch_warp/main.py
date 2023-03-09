@@ -22,7 +22,9 @@ class ProcessingStep(str, Enum):
 @click.option('-d', '--dry-run', is_flag=True, help='only print some info, without running the commands.')
 @click.option('-v', '--verbose', is_flag=True, help='print individual commands')
 @click.option('-j', '--just', type=str, multiple=True,
-              help='quickly reconstruct just this tomogram with a simple setup. Useful for testing and to estimate sample thickness')
+              help='reconstruct just these tomograms')
+@click.option('-e', '--exclude', type=str, multiple=True,
+              help='exclude these tomograms from the run')
 @click.option('-t', '--thickness', type=int, default=1200,
               help='unbinned thickness of the SAMPLE (ice or lamella); the reconstruction will be 20% thicker, but this will be used for alignment')
 @click.option('-b', '--binning', type=int, default=4, help='binning for aretomo reconstruction (relative to warp binning)')
@@ -37,7 +39,8 @@ class ProcessingStep(str, Enum):
               help='terminate processing after this step')
 @click.option('--ccderaser', type=str, default='ccderaser', help='command for ccderaser')
 @click.option('--aretomo', type=str, default='AreTomo', help='command for aretomo')
-def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binning, tilt_axis, patches, overwrite, train, topaz_patch_size, start_from, stop_at, ccderaser, aretomo):
+@click.option('--gpus', type=str, help='Comma separated list of gpus to use for aretomo. Default to all.')
+def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, thickness, binning, tilt_axis, patches, overwrite, train, topaz_patch_size, start_from, stop_at, ccderaser, aretomo, gpus):
     """
     Run aretomo in batch on data preprocessed in warp.
 
@@ -54,6 +57,9 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binni
 
     from .parse import parse_data
 
+    if gpus is not None:
+        gpus = [int(gpu) for gpu in gpus.split(',')]
+
     warp_dir = Path(warp_dir)
     if mdoc_dir is None:
         mdoc_dir = warp_dir
@@ -62,12 +68,13 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binni
     output_dir.mkdir(parents=True, exist_ok=True)
 
     with Progress() as progress:
-        tilt_series, tilt_series_unprocessed = parse_data(
+        tilt_series, tilt_series_excluded, tilt_series_unprocessed = parse_data(
             progress,
             warp_dir,
             mdoc_dir=mdoc_dir,
             output_dir=output_dir,
             just=just,
+            exclude=exclude,
             train=train,
         )
 
@@ -78,6 +85,7 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binni
             thickness_align=thickness,
             thickness_recon=int(thickness * 1.3),
             binning=binning,
+            gpus=gpus,
         )
 
         meta_kwargs = dict(
@@ -100,6 +108,7 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, thickness, binni
             [bold]Mdoc directory[/bold]: {mdoc_dir}
             [bold]Tilt series - NOT READY[/bold]: {''.join(f'{nl}{" " * 12}- {ts}' for ts in tilt_series_unprocessed)}
             [bold]Tilt series - READY[/bold]: {''.join(f'{nl}{" " * 12}- {ts["name"]}' for ts in tilt_series)}
+            [bold]Tilt series - EXCLUDED[/bold]: {''.join(f'{nl}{" " * 12}- {ts}' for ts in tilt_series_excluded)}
             [bold]Processing steps[/bold]: {''.join(f'{nl}{" " * 12}- [{"green" if v else "red"}]{k}[/{"green" if v else "red"}] ' for k, v in steps.items())}
             [bold]Run options[/bold]: {''.join(f'{nl}{" " * 12}- {k}: {v}' for k, v in meta_kwargs.items())}
             [bold]AreTomo options[/bold]: {''.join(f'{nl}{" " * 12}- {k}: {v}' for k, v in aretomo_kwargs.items())}
