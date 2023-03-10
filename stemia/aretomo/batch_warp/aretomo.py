@@ -27,7 +27,6 @@ def _aretomo(
     output,
     suffix='',
     cmd='AreTomo',
-    gpu=0,
     tilt_axis=0,
     patches=0,
     thickness_align=1200,
@@ -59,6 +58,9 @@ def _aretomo(
     with cd(cwd):
         if not overwrite and output.exists():
             raise FileExistsError(output)
+
+    # only one job per gpu
+    gpu = 0 if gpu_queue is None else gpu_queue.get()
 
     options = {
         'InMrc': input,
@@ -92,12 +94,6 @@ def _aretomo(
             'VolZ': 0,
         })
 
-    # only one job per gpu
-    if gpu_queue is None:
-        gpu = gpu or 0
-    else:
-        gpu = gpu_queue.get()
-
     # run aretomo with basic settings
     aretomo_cmd = f"{cmd} {' '.join(f'-{k} {v}' for k, v in options.items())}"
 
@@ -124,10 +120,11 @@ def _aretomo(
             gpu_queue.put(gpu)
 
 
-def aretomo_batch(progress, tilt_series, suffix='', label='', cmd='AreTomo', **kwargs):
+def aretomo_batch(progress, tilt_series, suffix='', label='', cmd='AreTomo', gpus=None, **kwargs):
     if not shutil.which(cmd):
         raise FileNotFoundError(f'{cmd} is not available on the system')
-    gpus = [gpu.id for gpu in GPUtil.getGPUs()]
+    if gpus is None:
+        gpus = [gpu.id for gpu in GPUtil.getGPUs()]
     if not gpus:
         raise RuntimeError('you need at least one GPU to run AreTomo')
     if kwargs.get('verbose'):
