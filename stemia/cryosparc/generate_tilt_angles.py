@@ -29,7 +29,7 @@ def cli(star_file, tilt_angle, tilt_axis, radians, star_output, overwrite):
     click.secho(f'Reading {star_file}...')
     data = starfile.read(star_file, always_dict=True)
 
-    psi = np.deg2rad(data['particles']['rlnAnglePsi'])
+    psi = np.deg2rad(data['particles']['rlnAnglePsiPrior'])
     tilt = np.repeat(np.pi / 2, len(psi))
     rot = np.zeros(len(psi))
 
