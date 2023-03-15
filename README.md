@@ -171,12 +171,14 @@ Usage: stemia image extract_z_snapshots [OPTIONS] [INPUTS]...
 
 Options:
   -o, --output-dir PATH
-  -s, --slices INTEGER   number of equidistant slices to extract
-  --keep-extrema         whether to keep slices at z=0 and z=-1 (if false,
-                         slices is reduced by 2)
-  --average INTEGER      number of slices to average over
-  --axis INTEGER         axis along which to do the slicing
-  --help                 Show this message and exit.
+  -n, --n-slices INTEGER  number of equidistant slices to extract
+  --keep-extrema          whether to keep slices at z=0 and z=-1 (if false,
+                          slices is reduced by 2)
+  -a, --average INTEGER   number of slices to average over
+  -s, --size TEXT         size of final image (X,Y)
+  -r, --range TEXT        range of slices to image (A,B)
+  --axis INTEGER          axis along which to do the slicing
+  --help                  Show this message and exit.
 ```
 
 ### stemia image flip_z
@@ -212,6 +214,35 @@ Options:
   --input-pixel-size FLOAT  force input pizel size and ignore mrc header
   -f, --overwrite           overwrite output if exists
   --help                    Show this message and exit.
+```
+
+### stemia relion align_filament_particles
+
+```
+Usage: stemia relion align_filament_particles [OPTIONS] STAR_FILE
+
+  Fix filament PsiPriors so they are consistent within a filament.
+
+  Read a Relion STAR_FILE with in-plane angles and filament info and flip any
+  particle that's not consistent with the rest of the filament.
+
+  If a consensus cannot be reached, or the filament has too few particles,
+  discard the whole filament.
+
+Options:
+  -o, --star-output FILE          where to put the updated version of the star
+                                  file [default: <STAR_FILE>_aligned.star]
+  -t, --tolerance FLOAT           angle in degrees within which neighbouring
+                                  particles are considered aligned
+  -c, --consensus-threshold FLOAT
+                                  require an angle consensus at least higher
+                                  than this to use a filament.
+  -d, --drop-below INTEGER        drop filaments if they have fewer than this
+                                  number of particles
+  -r, --rotate-bad-particles      rotate bad particles to match the rest of
+                                  the filament
+  -f, --overwrite                 overwrite output if exists
+  --help                          Show this message and exit.
 ```
 
 ### stemia warp fix_mdoc
