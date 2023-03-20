@@ -65,7 +65,7 @@ def cli(star_file, star_output, tolerance, rotate_bad_particles, consensus_thres
         if n_flipped > n_close:
             is_close, is_flipped = is_flipped, is_close
             n_close, n_flipped = n_flipped, n_close
-            computed_angles = np.mod(computed_angles[is_flipped], 360) - 180
+            computed_angles = np.mod(computed_angles, 360) - 180
 
         if n_close / n_close + n_flipped < consensus_threshold:
             df.loc[sub.index] = np.nan
