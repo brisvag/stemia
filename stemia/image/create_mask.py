@@ -4,15 +4,16 @@ import click
 @click.command()
 @click.argument('input', type=click.Path(exists=True, dir_okay=False, resolve_path=True))
 @click.argument('output', type=click.Path(dir_okay=False, resolve_path=True))
-@click.option('-t', '--mask-type', type=click.Choice(['sphere', 'cylinder', 'membrane']), default='sphere')
+@click.option('-t', '--mask-type', type=click.Choice(['sphere', 'cylinder', 'threshold']), default='sphere')
 @click.option('-c', '--center', type=float, help='center of the mask')
 @click.option('-a', '--axis', type=int, default=0, help='main symmetry axis (for cylinder)')
-@click.option('-r', '--radius', type=float, required=True, help='radius of the mask')
+@click.option('-r', '--radius', type=float, required=True, help='radius of the mask. If thresholding, equivalent to "hard padding"')
 @click.option('-i', '--inner-radius', type=float, help='inner radius of the mask (if any)')
 @click.option('-p', '--padding', type=float, default=3, help='smooth padding')
 @click.option('--ang/--px', default=True, help='whether the radius and padding are in angstrom or pixels')
+@click.option('--threshold', type=float, help='threshold for binarization of the input map')
 @click.option('-f', '--overwrite', is_flag=True, help='overwrite output if exists')
-def cli(input, output, mask_type, radius, inner_radius, center, axis, padding, ang, overwrite):
+def cli(input, output, mask_type, radius, inner_radius, center, axis, padding, ang, threshold, overwrite):
     """
     Create a mask for INPUT.
 
@@ -47,15 +48,20 @@ def cli(input, output, mask_type, radius, inner_radius, center, axis, padding, a
     ) + 0.5
 
     if mask_type == 'sphere':
-        root = center
+        dists = np.linalg.norm(indices - center, axis=-1)
     elif mask_type == 'cylinder':
         line = np.full((shape[axis], 3), center)
         line[:, axis] = np.arange(shape[axis])
         new_shape = [1 for _ in shape] + [3]
         new_shape[axis] = -1
-        root = line.reshape(new_shape)
-
-    dists = np.linalg.norm(indices - root, axis=-1)
+        line = line.reshape(new_shape)
+        dists = np.linalg.norm(indices - line, axis=-1)
+    elif mask_type == 'threshold':
+        import edt
+        with mrcfile.open(input, permissive=True) as mrc:
+            data = mrc.data
+        binarized = data > threshold
+        dists = -edt.sdf(binarized)
 
     def smoothstep_normalized(arr, min_val, max_val):
         rng = max_val - min_val
