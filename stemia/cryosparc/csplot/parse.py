@@ -13,13 +13,16 @@ def update_dict(d1, d2):
                 d1[k1][k2].update(d2[k1][k2])
 
 
-def find_cs_files(job_dir, sets=None):
+def find_cs_files(job_dir, sets=None, visited=None):
     """
     Recursively explore a job directory to find all the relevant cs files.
 
     This function recurses through all the parent jobs until it finds all the files
     required to have all the relevant info about the current job.
     """
+    if visited is None:
+        visited = []
+
     files = {
         'particles': {
             'cs': set(),
@@ -81,7 +84,13 @@ def find_cs_files(job_dir, sets=None):
                     file_set.remove(f)
 
     for parent in job['parents']:
-        update_dict(files, find_cs_files(job_dir.parent / parent))
+        # avoid reparsing already visited jobs
+        if job['uid'] in visited:
+            continue
+        else:
+            visited.append(job['uid'])
+
+        update_dict(files, find_cs_files(job_dir.parent / parent, visited=visited))
         if all(file_set for dct in files.values() for file_set in dct.values()):
             # found everything we need
             break
