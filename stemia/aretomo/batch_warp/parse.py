@@ -3,7 +3,7 @@ import mdocfile
 from xml.etree import ElementTree
 
 
-def parse_data(progress, warp_dir, mdoc_dir, output_dir, just=(), exclude=(), train=False):
+def parse_data(progress, warp_dir, mdoc_dir, output_dir, roi_dir, just=(), exclude=(), train=False):
     imod_dir = warp_dir / 'imod'
     if not imod_dir.exists():
         raise FileNotFoundError('warp directory does not have an `imod` subdirectory')
@@ -71,13 +71,24 @@ def parse_data(progress, warp_dir, mdoc_dir, output_dir, just=(), exclude=(), tr
             if param.get('Name') == 'Defocus':
                 defocus = float(param.get('Value'))
 
+        if roi_dir is not None:
+            roi_files = list(roi_dir.glob(f'{ts_name}*'))
+            if len(roi_files) == 1:
+                roi_file = roi_files[0]
+            else:
+                roi_file = None
+        else:
+            roi_file = None
+
+
         tilt_series.append({
             'name': ts_name,
             'stack': stack,
             'rawtlt': stack.with_suffix('.rawtlt'),
             'fix': output_dir / (ts_name + '_fix.st'),
             # due to a quirk of aretomo, with_suffix is named wrong because all extensions are removed
-            'aln': output_dir / (ts_name + '_fix.st.aln'),
+            'aln': output_dir / (ts_name.split('.')[0] + '.aln'),
+            'roi': roi_file,
             'odd': odd,
             'even': even,
             'stack_odd': output_dir / (ts_name + '_odd.st'),

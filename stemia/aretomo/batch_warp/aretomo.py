@@ -29,6 +29,7 @@ def _aretomo(
     cmd='AreTomo',
     tilt_axis=0,
     patches=0,
+    roi_file=None,
     thickness_align=1200,
     thickness_recon=0,
     binning=4,
@@ -87,12 +88,14 @@ def _aretomo(
         options.update({
             'AngFile': rawtlt,
             'AlignZ': thickness_align,
-            'TiltAxis': tilt_axis or 0,
+            'TiltAxis': f'{tilt_axis} 1' if tilt_axis is not None else '0 1',
             'Patch': f'{patches} {patches}',
-            'TiltCor': 1,
+            'TiltCor': -1,
             'OutXF': 1,
             'VolZ': 0,
         })
+        if roi_file is not None:
+            options['RoiFile'] = roi_file
 
     # run aretomo with basic settings
     aretomo_cmd = f"{cmd} {' '.join(f'-{k} {v}' for k, v in options.items())}"
@@ -142,6 +145,7 @@ def aretomo_batch(progress, tilt_series, suffix='', label='', cmd='AreTomo', gpu
                 input=ts['stack' + suffix] if suffix else ts['fix'],
                 rawtlt=ts['rawtlt'],
                 aln=ts['aln'],
+                roi_file=ts['roi'],
                 output=ts['recon' + suffix],
                 gpu_queue=gpu_queue,
                 cmd=cmd,

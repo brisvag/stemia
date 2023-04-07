@@ -30,6 +30,8 @@ class ProcessingStep(str, Enum):
 @click.option('-b', '--binning', type=int, default=4, help='binning for aretomo reconstruction (relative to warp binning)')
 @click.option('-a', '--tilt-axis', type=float, help='starting tilt axis for AreTomo, if any')
 @click.option('-p', '--patches', type=int, default=4, help='number of patches for local alignment in aretomo (NxN)')
+@click.option('-r', '--roi-dir', type=click.Path(exists=True, dir_okay=True, resolve_path=True),
+              help='directory containing ROI files. Extension does not matter, but names should be same as TS.')
 @click.option('-f', '--overwrite', is_flag=True, help='overwrite any previous existing run')
 @click.option('--train', is_flag=True, default=False, help='whether to train a new denosing model')
 @click.option('--topaz-patch-size', type=int, default=32, help='patch size for denoising in topaz.')
@@ -40,13 +42,12 @@ class ProcessingStep(str, Enum):
 @click.option('--ccderaser', type=str, default='ccderaser', help='command for ccderaser')
 @click.option('--aretomo', type=str, default='AreTomo', help='command for aretomo')
 @click.option('--gpus', type=str, help='Comma separated list of gpus to use for aretomo. Default to all.')
-def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, thickness, binning, tilt_axis, patches, overwrite, train, topaz_patch_size, start_from, stop_at, ccderaser, aretomo, gpus):
+def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, thickness, binning, tilt_axis, patches, roi_dir, overwrite, train, topaz_patch_size, start_from, stop_at, ccderaser, aretomo, gpus):
     """
     Run aretomo in batch on data preprocessed in warp.
 
-    Needs to be ran after imod stacks were generated. Requires ccderaser and AreTomo.
-    Assumes the default Warp directory structure with generated imod stacks. Some warp xml
-    files may be updated to disable too dark images.
+    Needs to be ran after imod stacks were generated. Requires ccderaser and AreTomo>=1.3.0.
+    Assumes the default Warp directory structure with generated imod stacks.
     """
     from inspect import cleandoc
     from pathlib import Path
@@ -67,12 +68,16 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, thickne
         output_dir = warp_dir / 'stemia'
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    if roi_dir is not None:
+        roi_dir = Path(roi_dir)
+
     with Progress() as progress:
         tilt_series, tilt_series_excluded, tilt_series_unprocessed = parse_data(
             progress,
             warp_dir,
             mdoc_dir=mdoc_dir,
             output_dir=output_dir,
+            roi_dir=roi_dir,
             just=just,
             exclude=exclude,
             train=train,
