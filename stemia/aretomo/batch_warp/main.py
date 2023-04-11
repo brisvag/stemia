@@ -29,7 +29,7 @@ class ProcessingStep(str, Enum):
               help='unbinned thickness of the SAMPLE (ice or lamella); the reconstruction will be 20% thicker, but this will be used for alignment')
 @click.option('-b', '--binning', type=int, default=4, help='binning for aretomo reconstruction (relative to warp binning)')
 @click.option('-a', '--tilt-axis', type=float, help='starting tilt axis for AreTomo, if any')
-@click.option('-p', '--patches', type=int, default=4, help='number of patches for local alignment in aretomo (NxN)')
+@click.option('-p', '--patches', type=int, help='number of patches for local alignment in aretomo (NxN), if any')
 @click.option('-r', '--roi-dir', type=click.Path(exists=True, dir_okay=True, resolve_path=True),
               help='directory containing ROI files. Extension does not matter, but names should be same as TS.')
 @click.option('-f', '--overwrite', is_flag=True, help='overwrite any previous existing run')

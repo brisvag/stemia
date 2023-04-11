@@ -28,7 +28,7 @@ def _aretomo(
     suffix='',
     cmd='AreTomo',
     tilt_axis=0,
-    patches=0,
+    patches=None,
     roi_file=None,
     thickness_align=1200,
     thickness_recon=0,
@@ -89,13 +89,14 @@ def _aretomo(
             'AngFile': rawtlt,
             'AlignZ': thickness_align,
             'TiltAxis': f'{tilt_axis} 1' if tilt_axis is not None else '0 1',
-            'Patch': f'{patches} {patches}',
             'TiltCor': -1,
             'OutXF': 1,
             'VolZ': 0,
         })
         if roi_file is not None:
             options['RoiFile'] = roi_file
+        if patches is not None:
+            options['Patch'] = f'{patches} {patches}',
 
     # run aretomo with basic settings
     aretomo_cmd = f"{cmd} {' '.join(f'-{k} {v}' for k, v in options.items())}"
