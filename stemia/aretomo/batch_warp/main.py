@@ -42,7 +42,8 @@ class ProcessingStep(str, Enum):
 @click.option('--ccderaser', type=str, default='ccderaser', help='command for ccderaser')
 @click.option('--aretomo', type=str, default='AreTomo', help='command for aretomo')
 @click.option('--gpus', type=str, help='Comma separated list of gpus to use for aretomo. Default to all.')
-def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, thickness, binning, tilt_axis, patches, roi_dir, overwrite, train, topaz_patch_size, start_from, stop_at, ccderaser, aretomo, gpus):
+@click.option('--no-tiltcorr', is_flag=True, help='do not correct sample tilt')
+def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, thickness, binning, tilt_axis, patches, roi_dir, overwrite, train, topaz_patch_size, start_from, stop_at, ccderaser, aretomo, gpus, no_tiltcorr):
     """
     Run aretomo in batch on data preprocessed in warp.
 
@@ -91,6 +92,7 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, thickne
             thickness_recon=int(thickness * 1.3),
             binning=binning,
             gpus=gpus,
+            tilt_corr=not no_tiltcorr,
         )
 
         meta_kwargs = dict(

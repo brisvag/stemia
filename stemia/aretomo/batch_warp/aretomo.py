@@ -30,6 +30,7 @@ def _aretomo(
     tilt_axis=0,
     patches=None,
     roi_file=None,
+    tilt_corr=True,
     thickness_align=1200,
     thickness_recon=0,
     binning=4,
@@ -89,7 +90,7 @@ def _aretomo(
             'AngFile': rawtlt,
             'AlignZ': thickness_align,
             'TiltAxis': f'{tilt_axis} 1' if tilt_axis is not None else '0 1',
-            'TiltCor': -1,
+            'TiltCor': int(tilt_corr),
             'OutXF': 1,
             'VolZ': 0,
         })
