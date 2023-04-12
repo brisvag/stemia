@@ -97,7 +97,7 @@ def _aretomo(
         if roi_file is not None:
             options['RoiFile'] = roi_file
         if patches is not None:
-            options['Patch'] = f'{patches} {patches}',
+            options['Patch'] = f'{patches} {patches}'
 
     # run aretomo with basic settings
     aretomo_cmd = f"{cmd} {' '.join(f'-{k} {v}' for k, v in options.items())}"
