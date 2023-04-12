@@ -91,7 +91,7 @@ def _aretomo(
             'AlignZ': thickness_align,
             'TiltAxis': f'{tilt_axis} 1' if tilt_axis is not None else '0 1',
             'TiltCor': int(tilt_corr),
-            'OutXF': 1,
+            'OutImod': 2,
             'VolZ': 0,
         })
         if roi_file is not None:
