@@ -80,14 +80,17 @@ def parse_data(progress, warp_dir, mdoc_dir, output_dir, roi_dir, just=(), exclu
         else:
             roi_file = None
 
+        # due to a quirk of aretomo, with_suffix is wrong in some cases
+        # because *all* extensions are removed
+        chopped_ts_name = ts_name.split('.')[0]
 
         tilt_series.append({
             'name': ts_name,
             'stack': stack,
             'rawtlt': stack.with_suffix('.rawtlt'),
             'fix': output_dir / (ts_name + '_fix.st'),
-            # due to a quirk of aretomo, with_suffix is named wrong because all extensions are removed
-            'aln': output_dir / (ts_name.split('.')[0] + '.aln'),
+            'aln': output_dir / (chopped_ts_name + '.aln'),
+            'xf': output_dir / (chopped_ts_name + '_Imod') / (chopped_ts_name + '.xf'),
             'roi': roi_file,
             'odd': odd,
             'even': even,

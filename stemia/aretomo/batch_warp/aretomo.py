@@ -24,7 +24,9 @@ def _aretomo(
     input,
     rawtlt,
     aln,
+    xf,
     output,
+    full_ts_name,
     suffix='',
     cmd='AreTomo',
     tilt_axis=0,
@@ -52,6 +54,7 @@ def _aretomo(
     input = Path(os.path.relpath(input, cwd))
     rawtlt = Path(os.path.relpath(rawtlt, cwd))
     aln = Path(os.path.relpath(aln, cwd))
+    xf = Path(os.path.relpath(xf, cwd))
     output = Path(os.path.relpath(output, cwd))
     if not reconstruct:
         output = output.with_stem(output.stem + '_aligned').with_suffix('.st')
@@ -116,9 +119,7 @@ def _aretomo(
             proc.check_returncode()
             if not reconstruct:
                 # move xf file so warp can see it (needs full ts name + .xf)
-                # FIXME: currently bvroken for some reason, do manually
-                # shutil.move(aln.with_suffix('.xf'), input.with_suffix('.xf'))
-                pass
+                shutil.move(xf, full_ts_name + '.xf')
     else:
         sleep(0.1)
         if gpu_queue is not None:
@@ -147,10 +148,12 @@ def aretomo_batch(progress, tilt_series, suffix='', label='', cmd='AreTomo', gpu
                 input=ts['stack' + suffix] if suffix else ts['fix'],
                 rawtlt=ts['rawtlt'],
                 aln=ts['aln'],
+                xf=ts['xf'],
                 roi_file=ts['roi'],
                 output=ts['recon' + suffix],
                 gpu_queue=gpu_queue,
                 cmd=cmd,
+                full_ts_name=ts['name'],
                 **ts['aretomo_kwargs'],
                 **kwargs,
             )
