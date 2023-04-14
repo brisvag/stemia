@@ -5,6 +5,7 @@ from enum import Enum, auto
 class ProcessingStep(str, Enum):
     fix = auto()
     align = auto()
+    tilt_mdocs = auto()
     reconstruct = auto()
     stack_halves = auto()
     reconstruct_halves = auto()
@@ -42,8 +43,8 @@ class ProcessingStep(str, Enum):
 @click.option('--ccderaser', type=str, default='ccderaser', help='command for ccderaser')
 @click.option('--aretomo', type=str, default='AreTomo', help='command for aretomo')
 @click.option('--gpus', type=str, help='Comma separated list of gpus to use for aretomo. Default to all.')
-@click.option('--no-tiltcorr', is_flag=True, help='do not correct sample tilt')
-def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, thickness, binning, tilt_axis, patches, roi_dir, overwrite, train, topaz_patch_size, start_from, stop_at, ccderaser, aretomo, gpus, no_tiltcorr):
+@click.option('--tiltcorr/--no-tiltcorr', default=True, help='do not correct sample tilt')
+def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, thickness, binning, tilt_axis, patches, roi_dir, overwrite, train, topaz_patch_size, start_from, stop_at, ccderaser, aretomo, gpus, tiltcorr):
     """
     Run aretomo in batch on data preprocessed in warp.
 
@@ -92,7 +93,7 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, thickne
             thickness_recon=int(thickness * 1.3),
             binning=binning,
             gpus=gpus,
-            tilt_corr=not no_tiltcorr,
+            tilt_corr=tiltcorr,
         )
 
         meta_kwargs = dict(
@@ -138,6 +139,20 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, thickne
                 **aretomo_kwargs,
                 **meta_kwargs,
             )
+
+        if steps['tilt_mdocs']:
+            if not tiltcorr:
+                print('No need to tilt mdocs!')
+            else:
+                from .fix_mdoc import tilt_mdocs_batch
+                if verbose:
+                    print('\n[green]Tilting mdocs...')
+                (mdoc_dir / 'mdoc_tilted').mkdir(parents=True, exist_ok=True)
+                tilt_mdocs_batch(
+                    progress,
+                    tilt_series,
+                    **meta_kwargs,
+                )
 
         if steps['reconstruct']:
             from .aretomo import aretomo_batch

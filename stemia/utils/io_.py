@@ -73,7 +73,7 @@ def parse_xml(node):
             return {}
         # parse text that contains data points into np.arrays
         points = np.asarray([p.split('|') for p in text.split(';')],
-                            dtype=np.float)
+                            dtype=np.float32)
         node_content = points
 
     return {node_name: node_content}

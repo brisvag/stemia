@@ -39,13 +39,14 @@ def parse_data(progress, warp_dir, mdoc_dir, output_dir, roi_dir, just=(), exclu
 
         # extract even/odd paths
         tilts = [warp_dir / PureWindowsPath(tilt).name for tilt in df.SubFramePath]
+        skipped_tilts = []
         odd = []
         even = []
         valid_xml = None
-        for tilt in tilts:
+        for i, tilt in enumerate(tilts):
             xml = ElementTree.parse(tilt.with_suffix('.xml')).getroot()
             if xml.attrib['UnselectManual'] == 'True':
-                continue
+                skipped_tilts.append(i)
 
             valid_xml = xml
             odd.append(odd_dir / (tilt.stem + '.mrc'))
@@ -91,6 +92,9 @@ def parse_data(progress, warp_dir, mdoc_dir, output_dir, roi_dir, just=(), exclu
             'fix': output_dir / (ts_name + '_fix.st'),
             'aln': output_dir / (chopped_ts_name + '.aln'),
             'xf': output_dir / (chopped_ts_name + '_Imod') / (chopped_ts_name + '.xf'),
+            'tlt': output_dir / (chopped_ts_name + '_Imod') / (chopped_ts_name + '.tlt'),
+            'skipped_tilts': skipped_tilts,
+            'mdoc': mdoc,
             'roi': roi_file,
             'odd': odd,
             'even': even,
