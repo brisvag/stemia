@@ -66,8 +66,10 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, thickne
     warp_dir = Path(warp_dir)
     if mdoc_dir is None:
         mdoc_dir = warp_dir
+    mdoc_dir = Path(mdoc_dir)
     if output_dir is None:
         output_dir = warp_dir / 'stemia'
+    output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if roi_dir is not None:
