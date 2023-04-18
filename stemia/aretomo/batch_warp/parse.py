@@ -3,7 +3,7 @@ import mdocfile
 from xml.etree import ElementTree
 
 
-def parse_data(progress, warp_dir, mdoc_dir, output_dir, roi_dir, just=(), exclude=(), train=False):
+def parse_data(progress, warp_dir, mdoc_dir, output_dir, roi_dir, aretomo_version, just=(), exclude=(), train=False):
     imod_dir = warp_dir / 'imod'
     if not imod_dir.exists():
         raise FileNotFoundError('warp directory does not have an `imod` subdirectory')
@@ -85,14 +85,19 @@ def parse_data(progress, warp_dir, mdoc_dir, output_dir, roi_dir, just=(), exclu
         # because *all* extensions are removed
         chopped_ts_name = ts_name.split('.')[0]
 
+        if aretomo_version == '1.3':
+            alignment_result_dir = output_dir / (chopped_ts_name + '_Imod')
+        else:
+            alignment_result_dir = output_dir
+
         tilt_series.append({
             'name': ts_name,
             'stack': stack,
             'rawtlt': stack.with_suffix('.rawtlt'),
             'fix': output_dir / (ts_name + '_fix.st'),
             'aln': output_dir / (chopped_ts_name + '.aln'),
-            'xf': output_dir / (chopped_ts_name + '_Imod') / (chopped_ts_name + '.xf'),
-            'tlt': output_dir / (chopped_ts_name + '_Imod') / (chopped_ts_name + '.tlt'),
+            'xf': alignment_result_dir / (chopped_ts_name + '.xf'),
+            'tlt': alignment_result_dir / (chopped_ts_name + '.tlt'),
             'skipped_tilts': skipped_tilts,
             'mdoc': mdoc,
             'roi': roi_file,

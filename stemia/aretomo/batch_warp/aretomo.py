@@ -29,6 +29,7 @@ def _aretomo(
     full_ts_name,
     suffix='',
     cmd='AreTomo',
+    aretomo_version='1.3',
     tilt_axis=0,
     patches=None,
     roi_file=None,
@@ -92,12 +93,21 @@ def _aretomo(
         options.update({
             'AngFile': rawtlt,
             'AlignZ': thickness_align,
-            'TiltAxis': f'{tilt_axis} 1' if tilt_axis is not None else '0 1',
             'TiltCor': int(tilt_corr),
             'OutImod': 2,
             'VolZ': 0,
         })
-        if roi_file is not None:
+        if aretomo_version == '1.3':
+            options.update({
+                'TiltAxis': f'{tilt_axis} 1' if tilt_axis is not None else '0 1',
+                'OutImod': 2,
+            })
+        else:
+            options.update({
+                'TiltAxis': f'{tilt_axis}' if tilt_axis is not None else '0',
+                'OutXF': 1,
+            })
+        if roi_file is not None and aretomo_version == '1.3':
             options['RoiFile'] = roi_file
         if patches is not None:
             options['Patch'] = f'{patches} {patches}'
