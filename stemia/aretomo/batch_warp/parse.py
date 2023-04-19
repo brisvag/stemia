@@ -88,7 +88,7 @@ def parse_data(progress, warp_dir, mdoc_dir, output_dir, roi_dir, aretomo_versio
         if aretomo_version == '1.3':
             alignment_result_dir = output_dir / (chopped_ts_name + '_Imod')
         else:
-            alignment_result_dir = output_dir
+            alignment_result_dir = output_dir / chopped_ts_name
 
         tilt_series.append({
             'name': ts_name,
