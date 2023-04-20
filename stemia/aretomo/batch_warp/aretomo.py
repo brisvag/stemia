@@ -94,7 +94,6 @@ def _aretomo(
             'AngFile': rawtlt,
             'AlignZ': thickness_align,
             'TiltCor': int(tilt_corr),
-            'OutImod': 2,
             'VolZ': 0,
         })
         if aretomo_version == '1.3':
