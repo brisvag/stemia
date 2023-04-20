@@ -117,6 +117,8 @@ def _aretomo(
 
     if verbose:
         print(aretomo_cmd)
+        if not reconstruct:
+            print(f'mv {xf} {full_ts_name + ".xf"}')
 
     if not dry_run:
         with cd(cwd):
