@@ -26,8 +26,10 @@ class ProcessingStep(str, Enum):
               help='reconstruct just these tomograms')
 @click.option('-e', '--exclude', type=str, multiple=True,
               help='exclude these tomograms from the run')
-@click.option('-t', '--thickness', type=int, default=1200,
-              help='unbinned thickness of the SAMPLE (ice or lamella); the reconstruction will be 20% thicker, but this will be used for alignment')
+@click.option('-t', '--sample-thickness', type=int, default=400,
+              help='unbinned thickness of the SAMPLE (ice or lamella) used for alignment')
+@click.option('-z', '--z-thickness', type=int, default=1200,
+              help='unbinned thickness of the RECONSTRUCTION.')
 @click.option('-b', '--binning', type=int, default=4, help='binning for aretomo reconstruction (relative to warp binning)')
 @click.option('-a', '--tilt-axis', type=float, help='starting tilt axis for AreTomo, if any')
 @click.option('-p', '--patches', type=int, help='number of patches for local alignment in aretomo (NxN), if any')
@@ -46,7 +48,7 @@ class ProcessingStep(str, Enum):
               help='version "family"; 1.1 is pre-imod output and pre-"smart patches"')
 @click.option('--gpus', type=str, help='Comma separated list of gpus to use for aretomo. Default to all.')
 @click.option('--tiltcorr/--no-tiltcorr', default=True, help='do not correct sample tilt')
-def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, thickness, binning, tilt_axis, patches, roi_dir, overwrite, train, topaz_patch_size, start_from, stop_at, ccderaser, aretomo, aretomo_version, gpus, tiltcorr):
+def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, sample_thickness, z_thickness, binning, tilt_axis, patches, roi_dir, overwrite, train, topaz_patch_size, start_from, stop_at, ccderaser, aretomo, aretomo_version, gpus, tiltcorr):
     """
     Run aretomo in batch on data preprocessed in warp.
 
@@ -94,8 +96,8 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, thickne
             cmd=aretomo,
             tilt_axis=tilt_axis,
             patches=patches,
-            thickness_align=thickness,
-            thickness_recon=int(thickness * 1.3),
+            thickness_align=sample_thickness,
+            thickness_recon=z_thickness,
             binning=binning,
             gpus=gpus,
             tilt_corr=tiltcorr,
