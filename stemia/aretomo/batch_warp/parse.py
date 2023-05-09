@@ -3,7 +3,7 @@ import mdocfile
 from xml.etree import ElementTree
 
 
-def parse_data(progress, warp_dir, mdoc_dir, output_dir, roi_dir, aretomo_version, just=(), exclude=(), train=False):
+def parse_data(progress, warp_dir, mdoc_dir, output_dir, roi_dir, just=(), exclude=(), train=False):
     imod_dir = warp_dir / 'imod'
     if not imod_dir.exists():
         raise FileNotFoundError('warp directory does not have an `imod` subdirectory')
@@ -81,23 +81,18 @@ def parse_data(progress, warp_dir, mdoc_dir, output_dir, roi_dir, aretomo_versio
         else:
             roi_file = None
 
-        # due to a quirk of aretomo, with_suffix is wrong in some cases
-        # because *all* extensions are removed
-        chopped_ts_name = ts_name.split('.')[0]
-
-        if aretomo_version == '1.3':
-            alignment_result_dir = output_dir / (chopped_ts_name + '_Imod')
-        else:
-            alignment_result_dir = output_dir
+        ts_fixed = ts_name + '_fix'
+        ts_aligned = ts_name + '_aligned'
+        alignment_result_dir = output_dir / (ts_aligned + '.st_Imod')
 
         tilt_series.append({
             'name': ts_name,
             'stack': stack,
             'rawtlt': stack.with_suffix('.rawtlt'),
-            'fix': output_dir / (ts_name + '_fix.st'),
-            'aln': output_dir / (chopped_ts_name + '.aln'),
-            'xf': alignment_result_dir / (chopped_ts_name + '.xf'),
-            'tlt': alignment_result_dir / (chopped_ts_name + '.tlt'),
+            'fix': output_dir / (ts_fixed + '.st'),
+            'aln': output_dir / (ts_fixed + '.st.aln'),
+            'xf': alignment_result_dir / (ts_aligned + '.xf'),
+            'tlt': alignment_result_dir / (ts_aligned + '.tlt'),
             'skipped_tilts': skipped_tilts,
             'mdoc': mdoc,
             'roi': roi_file,

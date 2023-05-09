@@ -44,11 +44,9 @@ class ProcessingStep(str, Enum):
               help='terminate processing after this step')
 @click.option('--ccderaser', type=str, default='ccderaser', help='command for ccderaser')
 @click.option('--aretomo', type=str, default='AreTomo', help='command for aretomo')
-@click.option('--aretomo-version', type=click.Choice(['1.3', '1.1']), default='1.3',
-              help='version "family"; 1.1 is pre-imod output and pre-"smart patches"')
 @click.option('--gpus', type=str, help='Comma separated list of gpus to use for aretomo. Default to all.')
 @click.option('--tiltcorr/--no-tiltcorr', default=True, help='do not correct sample tilt')
-def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, sample_thickness, z_thickness, binning, tilt_axis, patches, roi_dir, overwrite, train, topaz_patch_size, start_from, stop_at, ccderaser, aretomo, aretomo_version, gpus, tiltcorr):
+def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, sample_thickness, z_thickness, binning, tilt_axis, patches, roi_dir, overwrite, train, topaz_patch_size, start_from, stop_at, ccderaser, aretomo, gpus, tiltcorr):
     """
     Run aretomo in batch on data preprocessed in warp.
 
@@ -89,7 +87,6 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, sample_
             just=just,
             exclude=exclude,
             train=train,
-            aretomo_version=aretomo_version,
         )
 
         aretomo_kwargs = dict(
@@ -101,7 +98,6 @@ def cli(warp_dir, mdoc_dir, output_dir, dry_run, verbose, just, exclude, sample_
             binning=binning,
             gpus=gpus,
             tilt_corr=tiltcorr,
-            aretomo_version=aretomo_version,
         )
 
         meta_kwargs = dict(
