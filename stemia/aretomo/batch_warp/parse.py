@@ -47,12 +47,13 @@ def parse_data(progress, warp_dir, mdoc_dir, output_dir, roi_dir, just=(), exclu
             xml = ElementTree.parse(tilt.with_suffix('.xml')).getroot()
             if xml.attrib['UnselectManual'] == 'True':
                 skipped_tilts.append(i)
-
-            valid_xml = xml
-            odd.append(odd_dir / (tilt.stem + '.mrc'))
-            even.append(even_dir / (tilt.stem + '.mrc'))
+            else:
+                valid_xml = xml
+                odd.append(odd_dir / (tilt.stem + '.mrc'))
+                even.append(even_dir / (tilt.stem + '.mrc'))
 
         if valid_xml is None:
+            tilt_series_unprocessed.append(ts_name)
             continue
 
         if train:
