@@ -83,17 +83,17 @@ def parse_data(progress, warp_dir, mdoc_dir, output_dir, roi_dir, just=(), exclu
             roi_file = None
 
         ts_fixed = ts_name + '_fix'
-        ts_aligned = ts_name + '_aligned'
-        alignment_result_dir = output_dir / (ts_aligned + '.st_Imod')
+        ts_stripped = ts_name.split('.')[0]
+        alignment_result_dir = output_dir / (ts_stripped + '_Imod')
 
         tilt_series.append({
             'name': ts_name,
             'stack': stack,
             'rawtlt': stack.with_suffix('.rawtlt'),
             'fix': output_dir / (ts_fixed + '.st'),
-            'aln': output_dir / (ts_fixed + '.st.aln'),
-            'xf': alignment_result_dir / (ts_aligned + '.xf'),
-            'tlt': alignment_result_dir / (ts_aligned + '.tlt'),
+            'aln': output_dir / (ts_stripped + '.aln'),
+            'xf': alignment_result_dir / (ts_stripped + '.xf'),
+            'tlt': alignment_result_dir / (ts_stripped + '.tlt'),
             'skipped_tilts': skipped_tilts,
             'mdoc': mdoc,
             'roi': roi_file,
