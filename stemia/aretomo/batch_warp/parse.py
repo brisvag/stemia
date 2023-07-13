@@ -71,7 +71,7 @@ def parse_data(progress, warp_dir, mdoc_dir, output_dir, roi_dir, just=(), exclu
                 cs = float(param.get('Value'))
         for param in xml.find('CTF'):
             if param.get('Name') == 'Defocus':
-                defocus = float(param.get('Value'))
+                defocus = float(param.get('Value')) * 1e4  # defocus for aretomo is in Angstrom
 
         if roi_dir is not None:
             roi_files = list(roi_dir.glob(f'{ts_name}*'))
