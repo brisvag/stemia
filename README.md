@@ -34,8 +34,8 @@ Usage: stemia aretomo batch_warp [OPTIONS] WARP_DIR
   Run aretomo in batch on data preprocessed in warp.
 
   Needs to be ran after imod stacks were generated. Requires ccderaser and
-  AreTomo. Assumes the default Warp directory structure with generated imod
-  stacks. Some warp xml files may be updated to disable too dark images.
+  AreTomo>=1.3.0. Assumes the default Warp directory structure with generated
+  imod stacks.
 
 Options:
   -m, --mdoc-dir PATH
@@ -46,26 +46,30 @@ Options:
   -v, --verbose                   print individual commands
   -j, --just TEXT                 reconstruct just these tomograms
   -e, --exclude TEXT              exclude these tomograms from the run
-  -t, --thickness INTEGER         unbinned thickness of the SAMPLE (ice or
-                                  lamella); the reconstruction will be 20%
-                                  thicker, but this will be used for alignment
+  -t, --sample-thickness INTEGER  unbinned thickness of the SAMPLE (ice or
+                                  lamella) used for alignment
+  -z, --z-thickness INTEGER       unbinned thickness of the RECONSTRUCTION.
   -b, --binning INTEGER           binning for aretomo reconstruction (relative
                                   to warp binning)
   -a, --tilt-axis FLOAT           starting tilt axis for AreTomo, if any
   -p, --patches INTEGER           number of patches for local alignment in
-                                  aretomo (NxN)
+                                  aretomo (NxN), if any
+  -r, --roi-dir PATH              directory containing ROI files. Extension
+                                  does not matter, but names should be same as
+                                  TS.
   -f, --overwrite                 overwrite any previous existing run
   --train                         whether to train a new denosing model
   --topaz-patch-size INTEGER      patch size for denoising in topaz.
-  --start-from [fix|align|reconstruct|stack_halves|reconstruct_halves|denoise]
+  --start-from [fix|align|tilt_mdocs|reconstruct|stack_halves|reconstruct_halves|denoise]
                                   use outputs from a previous run, starting
                                   processing at this step
-  --stop-at [fix|align|reconstruct|stack_halves|reconstruct_halves|denoise]
+  --stop-at [fix|align|tilt_mdocs|reconstruct|stack_halves|reconstruct_halves|denoise]
                                   terminate processing after this step
   --ccderaser TEXT                command for ccderaser
   --aretomo TEXT                  command for aretomo
   --gpus TEXT                     Comma separated list of gpus to use for
                                   aretomo. Default to all.
+  --tiltcorr / --no-tiltcorr      do not correct sample tilt
   --help                          Show this message and exit.
 ```
 
@@ -135,6 +139,22 @@ Options:
   --help                  Show this message and exit.
 ```
 
+### stemia cryosparc merge_defects_gainref
+
+```
+Usage: stemia cryosparc merge_defects_gainref [OPTIONS] DEFECTS GAINREF
+
+  Merge serialEM defects and gainref for cryosparc usage.
+
+  requires active sbrgrid.
+
+Options:
+  -d, --output-defects FILE
+  -o, --output-gainref FILE
+  -f, --overwrite            overwrite output if exists
+  --help                     Show this message and exit.
+```
+
 ### stemia image center_filament
 
 ```
@@ -158,6 +178,30 @@ Options:
   -n, --n-filaments INTEGER     number of filaments on the image  [default: 2]
   -p, --percentile INTEGER      percentile for binarisation  [default: 85]
   --help                        Show this message and exit.
+```
+
+### stemia image create_mask
+
+```
+Usage: stemia image create_mask [OPTIONS] INPUT OUTPUT
+
+  Create a mask for INPUT.
+
+  Axis order is zyx!
+
+Options:
+  -t, --mask-type [sphere|cylinder|threshold]
+  -c, --center FLOAT              center of the mask
+  -a, --axis INTEGER              main symmetry axis (for cylinder)
+  -r, --radius FLOAT              radius of the mask. If thresholding,
+                                  equivalent to "hard padding"  [required]
+  -i, --inner-radius FLOAT        inner radius of the mask (if any)
+  -p, --padding FLOAT             smooth padding
+  --ang / --px                    whether the radius and padding are in
+                                  angstrom or pixels
+  --threshold FLOAT               threshold for binarization of the input map
+  -f, --overwrite                 overwrite output if exists
+  --help                          Show this message and exit.
 ```
 
 ### stemia image extract_z_snapshots
@@ -201,6 +245,19 @@ Options:
   --help                   Show this message and exit.
 ```
 
+### stemia image fourier_crop
+
+```
+Usage: stemia image fourier_crop [OPTIONS] [INPUTS]...
+
+  Bin mrc images to the specified pixel size using fourier cropping.
+
+Options:
+  -b, --binning FLOAT  binning amount  [required]
+  -f, --overwrite      overwrite output if exists
+  --help               Show this message and exit.
+```
+
 ### stemia image rescale
 
 ```
@@ -214,6 +271,20 @@ Options:
   --input-pixel-size FLOAT  force input pizel size and ignore mrc header
   -f, --overwrite           overwrite output if exists
   --help                    Show this message and exit.
+```
+
+### stemia imod find_NAD_params
+
+```
+Usage: stemia imod find_NAD_params [OPTIONS] INPUT
+
+  Test a range of k and iteration values for nad_eed_3d
+
+Options:
+  -k, --k-values TEXT
+  -i, --iterations TEXT
+  -s, --std TEXT
+  --help                 Show this message and exit.
 ```
 
 ### stemia relion align_filament_particles
@@ -255,6 +326,19 @@ Usage: stemia warp fix_mdoc [OPTIONS] MDOC_DIR
 Options:
   -d, --data-dir PATH
   --help               Show this message and exit.
+```
+
+### stemia warp merge_star
+
+```
+Usage: stemia warp merge_star [OPTIONS] [STAR_FILES]...
+
+  Merge star files ignoring optic groups and ensuring columns for warp.
+
+Options:
+  -o, --star-output FILE  where to put the merged star file  [required]
+  -f, --overwrite         overwrite output if exists
+  --help                  Show this message and exit.
 ```
 
 ### stemia warp offset_angle
