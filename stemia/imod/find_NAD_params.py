@@ -11,9 +11,12 @@ def cli(input, k_values, iterations, std):
     Test a range of k and iteration values for nad_eed_3d
     """
     from pathlib import Path
+    import re
+    from functools import partial
+
     import mrcfile
-    from io import StringIO
-    from rich.progress import track
+    from rich.progress import Progress
+    from rich import print
     import sh
 
     inp = Path(input)
@@ -21,22 +24,35 @@ def cli(input, k_values, iterations, std):
         with mrcfile.open(input, header_only=True) as mrc:
             std = mrc.header.rms.item()
 
-    stdout = StringIO()
-
     ks = [float(k) for k in k_values.split(',')]
-    for k in track(ks, description='Denoising...'):
-        k = k * std
-        out = inp.with_stem(inp.stem + f'-{k:.5f}_i').with_suffix('')
+    max_it = max(float(it) for it in iterations.split(','))
 
-        try:
-            sh.nad_eed_3d(
+    it_n = re.compile(r'iteration number:\s+\d+')
+
+    with Progress() as progress:
+        def _process_output(task, line):
+            if it_n.match(line):
+                progress.update(task, advance=1)
+
+        procs = []
+        for k_ in ks:
+            k = k_ * std
+            out = inp.with_stem(inp.stem + f'-{k:.5f}_i').with_suffix('')
+
+            task = progress.add_task(f'Iterating with k={k:.5f} ({k_} * std)...', total=max_it)
+
+            proc = sh.nad_eed_3d(
                 '-k', k,
                 '-i', iterations,
                 '-e', 'mrc',
                 str(inp),
                 str(out),
-                _out=stdout,
-                _err=stdout,
+                _out=partial(_process_output, task),
+                _err=print,
+                _bg=True,
             )
-        except:
-            print(stdout.getvalue())
+
+            procs.append(proc)
+
+        for proc in procs:
+            proc.wait()
