@@ -23,6 +23,9 @@ def cli(input, k_values, iterations, std):
     if std is None:
         with mrcfile.open(input, header_only=True) as mrc:
             std = mrc.header.rms.item()
+        if std == 0:
+            with mrcfile.open(input) as mrc:
+                std = mrc.data.std()
 
     ks = [float(k) for k in k_values.split(',')]
     max_it = max(float(it) for it in iterations.split(','))
