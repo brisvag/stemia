@@ -37,9 +37,9 @@ def cli(input, k_values, iterations, std):
         procs = []
         for k_ in ks:
             k = k_ * std
-            out = inp.with_stem(inp.stem + f'-{k:.5f}_i').with_suffix('')
+            out = inp.with_stem(inp.stem + f'-{k}_i').with_suffix('')
 
-            task = progress.add_task(f'Iterating with k={k:.5f} ({k_} * std)...', total=max_it)
+            task = progress.add_task(f'Iterating with k={k} ({k_} * std)...', total=max_it)
 
             proc = sh.nad_eed_3d(
                 '-k', k,
