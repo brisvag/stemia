@@ -3,9 +3,7 @@ useful functions for image processing
 """
 
 from math import ceil
-
 import numpy as np
-from scipy.ndimage import rotate, label, fourier_shift
 
 
 def rot_avg(img):
@@ -44,11 +42,13 @@ def to_positive(img):
 
 
 def fourier_translate(img, shift):
+    from scipy.ndimage import fourier_shift
     trans_ft = fourier_shift(np.fft.fftn(img), shift)
     return np.real(np.fft.ifftn(trans_ft)).astype(np.float32)
 
 
 def label_features(img, kernel=np.ones((3, 3))):
+    from scipy.ndimage import label
     labeled, count = label(img, structure=kernel)
     return labeled, range(1, count + 1)
 
@@ -67,6 +67,7 @@ def rotations(img, degree_range):
     """
     degree range: iterable of degrees (counterclockwise)
     """
+    from scipy.ndimage import rotate
     for angle in degree_range:
         yield angle, rotate(img, angle, reshape=False)
 
@@ -77,3 +78,50 @@ def coerce_ndim(img, ndim):
     while img.ndim < ndim:
         img = np.expand_dims(img, 0)
     return img
+
+
+def compute_dist_field(shape, field_type, center=None, axis=None, threshold=None):
+    if center is None:
+        center = np.array(shape) / 2
+
+    ndim = len(shape)
+
+    ranges = [np.arange(0, d) for d in shape]
+    indices = np.stack(
+        np.meshgrid(*ranges, indexing='ij'),
+        axis=-1
+    ) + 0.5
+
+    if field_type == 'sphere':
+        dists = np.linalg.norm(indices - center, axis=-1)
+    elif field_type == 'cylinder':
+        line = np.full((shape[axis], ndim), center)
+        line[:, axis] = np.arange(shape[axis])
+        new_shape = [1 for _ in shape] + [ndim]
+        new_shape[axis] = -1
+        line = line.reshape(new_shape)
+        dists = np.linalg.norm(indices - line, axis=-1)
+    elif field_type == 'threshold':
+        import edt
+        with mrcfile.open(input, permissive=True) as mrc:
+            data = mrc.data
+        binarized = data > threshold
+        dists = -edt.sdf(binarized)
+
+    return dists
+
+
+def smoothstep_normalized(arr, min_val, max_val):
+    rng = max_val - min_val
+    normalized = (arr - min_val) / rng
+    smooth = np.where(normalized < 0, 0, np.where(normalized <= 1, 3 * normalized**2 - 2 * normalized**3, 1))
+    return 1 - smooth
+
+
+def create_mask_from_field(field, radius, inner_radius=None, padding=None):
+    mask = smoothstep_normalized(field, radius, radius + padding)
+    if inner_radius is not None:
+        inner_mask = smoothstep_normalized(field, inner_radius, inner_radius + padding)
+        mask -= inner_mask
+
+    return mask

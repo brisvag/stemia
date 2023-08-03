@@ -31,49 +31,9 @@ def cli(input, output, mask_type, radius, inner_radius, center, axis, padding, a
         shape = mrc.header[['nx', 'ny', 'nz']].item()
         px_size = mrc.voxel_size.item()[0]
 
-    if center is None:
-        center = np.array(shape) / 2
     if ang:
         radius *= px_size
         padding *= px_size
-
-    indices = np.stack(
-        np.meshgrid(
-            np.arange(0, shape[0]),
-            np.arange(0, shape[1]),
-            np.arange(0, shape[2]),
-            indexing='ij'
-        ),
-        axis=-1
-    ) + 0.5
-
-    if mask_type == 'sphere':
-        dists = np.linalg.norm(indices - center, axis=-1)
-    elif mask_type == 'cylinder':
-        line = np.full((shape[axis], 3), center)
-        line[:, axis] = np.arange(shape[axis])
-        new_shape = [1 for _ in shape] + [3]
-        new_shape[axis] = -1
-        line = line.reshape(new_shape)
-        dists = np.linalg.norm(indices - line, axis=-1)
-    elif mask_type == 'threshold':
-        import edt
-        with mrcfile.open(input, permissive=True) as mrc:
-            data = mrc.data
-        binarized = data > threshold
-        dists = -edt.sdf(binarized)
-
-    def smoothstep_normalized(arr, min_val, max_val):
-        rng = max_val - min_val
-        normalized = (arr - min_val) / rng
-        smooth = np.where(normalized < 0, 0, np.where(normalized <= 1, 3 * normalized**2 - 2 * normalized**3, 1))
-        return 1 - smooth
-
-    mask = smoothstep_normalized(dists, radius, radius + padding)
-
-    if inner_radius is not None:
-        inner_mask = smoothstep_normalized(dists, inner_radius, inner_radius + padding)
-        mask -= inner_mask
 
     with mrcfile.new(output, mask.astype(np.float32), overwrite=overwrite) as mrc:
         mrc.header.cella = cell
