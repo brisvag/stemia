@@ -2,6 +2,7 @@ import subprocess
 import pkgutil
 import importlib
 from pathlib import Path
+from rich import print
 
 import click
 
@@ -64,6 +65,7 @@ def add_subcommands(cli, base_dir, base_package):
         module = importlib.import_module(full_name)
         # get the cli if it exists
         if hasattr(module, 'cli'):
+            module.cli.name = name
             cli.add_command(module.cli, name=name)
             has_subcommands = True
         # go deeper if needed
@@ -74,11 +76,30 @@ def add_subcommands(cli, base_dir, base_package):
             subcli = click.group()(subcli)
             has_subcommands = add_subcommands(subcli, source / name, full_name)
             if has_subcommands:
+                subcli.name = name
                 cli.add_command(subcli, name=name)
 
     # add shell scripts
     for file in source.glob('*.sh'):
-        cli.add_command(make_command(file), name=file.stem)
+        subcli = make_command(file)
+        subcli.name = file.stem
+        cli.add_command(subcli, name=file.stem)
         has_subcommands = True
 
     return has_subcommands
+
+
+def print_command_tree(cli, prefix='', last=True):
+    # top of three, put a dot
+    if not prefix:
+        print(f'.[bold]{cli.name}[/]')
+    subs = getattr(cli, 'commands', {})
+    for i, sub in enumerate(subs.values()):
+        last_sub = len(subs) - i == 1
+        end_prefix = '└──' if last_sub else '├──'
+        print(
+            f'[white]{prefix + end_prefix}[/][bold]{sub.name}[/]:  '
+            f'[italic white]{(sub.__doc__ or "-").strip().splitlines()[0]}[/]'
+        )
+        sub_prefix = '   ' if last_sub else '│  '
+        print_command_tree(sub, prefix=prefix + sub_prefix, last=last_sub)

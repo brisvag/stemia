@@ -1,7 +1,7 @@
 import click
 from pathlib import Path
 
-from .utils.click import add_subcommands
+from .utils.click import add_subcommands, print_command_tree
 
 try:
     from ._version import version
@@ -9,9 +9,16 @@ except ImportError:
     version = 'unknown'
 
 
-@click.group(context_settings=dict(help_option_names=['-h', '--help'], show_default=True))
+def _print_tree(ctx, param, value):
+    print_command_tree(cli)
+    ctx.exit()
+
+
+@click.group(name='stemia', context_settings=dict(help_option_names=['-h', '--help'], show_default=True))
 @click.version_option(version=version)
-def cli():
+@click.option('-l', '--list', is_flag=True, is_eager=True, expose_value=False, callback=_print_tree,
+              help='print all the available commands')
+def cli(list):
     """
     Main entry point for stemia. Several subcommands are available.
 
