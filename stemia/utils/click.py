@@ -48,6 +48,20 @@ def make_command(file):
     return func
 
 
+def try_subcommand(sub):
+    cb = sub.callback
+
+    def wrap(*args, **kwargs):
+        try:
+            cb(*args, **kwargs)
+        except ModuleNotFoundError as e:
+            print(f'{e.args[0]}. Install missing dependencies with:\n'
+                  f'  [bold]pip install "stemia\[{sub.name}]"[/]')
+
+    sub.callback = wrap
+    return sub
+
+
 def add_subcommands(cli, base_dir, base_package):
     """
     Recursively add subcommands to a cli by walking the package tree and looking for
@@ -66,7 +80,7 @@ def add_subcommands(cli, base_dir, base_package):
         # get the cli if it exists
         if hasattr(module, 'cli'):
             module.cli.name = name
-            cli.add_command(module.cli, name=name)
+            cli.add_command(try_subcommand(module.cli), name=name)
             has_subcommands = True
         # go deeper if needed
         elif is_pkg:
@@ -74,10 +88,10 @@ def add_subcommands(cli, base_dir, base_package):
                 pass
             subcli.__doc__ = module.__doc__
             subcli = click.group()(subcli)
-            has_subcommands = add_subcommands(subcli, source / name, full_name)
+            has_subcommands = add_subcommands(try_subcommand(subcli), source / name, full_name)
             if has_subcommands:
                 subcli.name = name
-                cli.add_command(subcli, name=name)
+                cli.add_command(try_subcommand(subcli), name=name)
 
     # add shell scripts
     for file in source.glob('*.sh'):
