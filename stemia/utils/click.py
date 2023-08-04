@@ -98,8 +98,8 @@ def print_command_tree(cli, prefix='', last=True):
         last_sub = len(subs) - i == 1
         end_prefix = '└──' if last_sub else '├──'
         print(
-            f'[white]{prefix + end_prefix}[/][bold]{sub.name}[/]:  '
+            f'[white]{prefix + end_prefix} [/][bold]{sub.name}[/]:  '
             f'[italic white]{(sub.__doc__ or "-").strip().splitlines()[0]}[/]'
         )
-        sub_prefix = '   ' if last_sub else '│  '
+        sub_prefix = '    ' if last_sub else '│   '
         print_command_tree(sub, prefix=prefix + sub_prefix, last=last_sub)
