@@ -42,7 +42,7 @@ def cli(stacks, max_classes):
 
     images = {}
 
-    print('Running with {max_classes} classes.')
+    print(f'Running with {max_classes} classes.')
 
     df = pd.DataFrame(columns=['total_density', 'radius_of_gyration'])
     df.index.name = 'image'
@@ -79,11 +79,12 @@ def cli(stacks, max_classes):
         progress.update(proc_task, advance=1)
 
         for cl, df_cl in progress.track(df.groupby('class'), description='Splitting classes...'):
-            stacked = []
+            stacked = {}
             for img in df_cl.index:
                 *img_name, idx = img.split('_')
                 img_name = '_'.join(img_name)
                 idx = int(idx)
-                stacked.append(images[img_name][idx])
-            mrc = mrcfile.new(f'{img_name}_class_{cl:04}.mrc', np.stack(stacked), overwrite=True)
-            mrc.close()
+                stacked[img_name] = images[img_name][idx]
+            for img_name, data in stacked.items():
+                mrc = mrcfile.new(f'{img_name}_class_{cl:04}.mrc', np.stack(data), overwrite=True)
+                mrc.close()
