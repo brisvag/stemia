@@ -84,7 +84,7 @@ def cli(stacks, max_classes):
                 *img_name, idx = img.split('_')
                 img_name = '_'.join(img_name)
                 idx = int(idx)
-                stacked[img_name] = images[img_name][idx]
+                stacked.setdefault(img_name, []).append(images[img_name][idx])
             for img_name, data in stacked.items():
                 mrc = mrcfile.new(f'{img_name}_class_{cl:04}.mrc', np.stack(data), overwrite=True)
                 mrc.close()
