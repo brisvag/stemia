@@ -190,6 +190,18 @@ Options:
   --help                        Show this message and exit.
 ```
 
+### stemia image classify_densities
+
+```
+Usage: stemia image classify_densities [OPTIONS] [STACKS]...
+
+  Do hierarchical classification of particle stacks based on densities.
+
+Options:
+  -c, --max-classes INTEGER
+  --help                     Show this message and exit.
+```
+
 ### stemia image create_mask
 
 ```
@@ -324,6 +336,25 @@ Options:
                                   the filament
   -f, --overwrite                 overwrite output if exists
   --help                          Show this message and exit.
+```
+
+### stemia relion edit_star
+
+```
+Usage: stemia relion edit_star [OPTIONS] [STAR_FILES]...
+
+  Simple search-replace utility for star files.
+
+  Full regex functionality works (e.g: reusing groups in output)
+
+Options:
+  -s, --suffix-output TEXT  suffix added to the output files before extension
+  -c, --column TEXT         column(s) to modify
+  -i, --regex-in TEXT       regex sed-like search pattern(s)
+  -o, --regex-out TEXT      regex sed-like substitution to apply to the
+                            column(s)
+  -f, --overwrite           overwrite output if exists
+  --help                    Show this message and exit.
 ```
 
 ### stemia warp fix_mdoc
