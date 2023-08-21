@@ -10,6 +10,12 @@ This is a simple personal collection of (sometimes...) useful scripts and tools 
 pip install stemia
 ```
 
+You can quickly list all the available tools with
+
+```
+stemia -l
+```
+
 ## Completion
 
 You can enable completion for your bash shell by running:
