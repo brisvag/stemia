@@ -10,6 +10,16 @@ This is a simple personal collection of (sometimes...) useful scripts and tools 
 pip install stemia
 ```
 
+## Completion
+
+You can enable completion for your bash shell by running:
+
+```
+eval "$(_STEMIA_COMPLETE=bash_source stemia)"
+```
+
+See [the click docs](https://click.palletsprojects.com/en/8.1.x/shell-completion/#enabling-completion) for how to do it for other shells.
+
 ## Tools
 
 Everything is accessible through the main command line interface `stemia`. Try `stemia -h`.
