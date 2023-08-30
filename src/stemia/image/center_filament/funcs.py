@@ -6,7 +6,7 @@ import pandas as pd
 from scipy.spatial.distance import cdist
 from skimage.morphology import remove_small_objects, skeletonize
 
-from ..utils.image_processing import (
+from ...utils.image_processing import (
     binarise,
     crop_center,
     features_by_size,
