@@ -1,10 +1,168 @@
+# https://peps.python.org/pep-0517/
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel",
-    "setuptools_scm[toml]>=3.4"
-]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
-[tool.setuptools_scm]
-write_to = "stemia/_version.py"
+# https://peps.python.org/pep-0621/
+[project]
+name = "stemia"
+description = "A personal collection of (sometimes...) useful scripts and tools for cryoem/cryoet."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "GPLv3" }
+authors = [
+    { email = "brisvag@gmail.com", name = "Lorenzo Gaifas" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Intended Audience :: Science/Research",
+]
+dynamic = ["version"]
+dependencies = [
+    "click",
+    "mrcfile",
+    "numpy",
+    "pandas",
+    "rich",
+    "scipy",
+    "sh",
+]
+
+# extras
+# https://peps.python.org/pep-0621/#dependencies-optional-dependencies
+[project.optional-dependencies]
+csplot =
+    "plotly",
+    "magicgui",
+    "IPython",
+fix_filament_ids =
+    "starfile",
+generate_tilt_angles =
+    "starfile",
+cryosparc =
+    "stemia[csplot]",
+    "stemia[fix_filament_ids]",
+    "stemia[generate_tilt_angles]",
+center_filament =
+    "scikit-image",
+classify_densities =
+    "matplotlib",
+    "plotly",
+    "edt",
+create_mask =
+    "edt",
+extract_z_snapshots =
+    "napari[pyqt5]",
+    "cryohub",
+    "cryotypes",
+flip_z =
+    "starfile",
+    "eulerangles",
+image =
+    "stemia[center_filament]",
+    "stemia[classify_densities]",
+    "stemia[create_mask]",
+    "stemia[extract_z_snapshots]",
+    "stemia[flip_z]",
+align_filament_particles =
+    "starfile",
+relion =
+    "stemia[align_filament_particles]",
+fix_mdoc =
+    "mdocfile",
+merge_star =
+    "starfile",
+offset_angle =
+    "mdocfile",
+prepare_isonet =
+    "starfile",
+spoof_mdoc =
+    "mdocfile",
+summarize =
+    "tabulate",
+warp =
+    "stemia[fix_mdoc]",
+    "stemia[merge_star]",
+    "stemia[offset_angle]",
+    "stemia[prepare_isonet]",
+    "stemia[spoof_mdoc]",
+    "stemia[summarize]",
+all =
+    "stemia[cryosparc]",
+    "stemia[image]",
+    "stemia[relion]",
+    "stemia[warp]",
+dev = [
+    "black",
+    "ipython",
+    "pdbpp",
+    "pre-commit",
+    "rich",
+    "ruff",
+    "stemia[all]",
+]
+
+[project.urls]
+homepage = "https://github.com/brisvag/stemia"
+repository = "https://github.com/brisvag/stemia"
+
+# same as console_scripts entry point
+[project.scripts]
+stemia = "stemia:cli"
+
+# https://hatch.pypa.io/latest/config/metadata/
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.wheel]
+only-include = ["src"]
+sources = ["src"]
+
+# https://github.com/charliermarsh/ruff
+[tool.ruff]
+line-length = 120
+target-version = "py38"
+src = ["src"]
+# https://beta.ruff.rs/docs/rules/
+select = [
+    "E",    # style errors
+    "W",    # style warnings
+    "F",    # flakes
+    "D",    # pydocstyle
+    "I",    # isort
+    "UP",   # pyupgrade
+    "C4",   # flake8-comprehensions
+    "B",    # flake8-bugbear
+    "A001", # flake8-builtins
+    "RUF",  # ruff-specific rules
+]
+# I do this to get numpy-style docstrings AND retain
+# D417 (Missing argument descriptions in the docstring)
+# otherwise, see:
+# https://beta.ruff.rs/docs/faq/#does-ruff-support-numpy-or-google-style-docstrings
+# https://github.com/charliermarsh/ruff/issues/2606
+ignore = [
+    "D100", # Missing docstring in public module
+    "D107", # Missing docstring in __init__
+    "D203", # 1 blank line required before class docstring
+    "D212", # Multi-line docstring summary should start at the first line
+    "D213", # Multi-line docstring summary should start at the second line
+    "D401", # First line should be in imperative mood
+    "D413", # Missing blank line after last section
+    "D416", # Section name should end with a colon
+]
+
+# https://github.com/mgedmin/check-manifest#configuration
+[tool.check-manifest]
+ignore = [
+    ".github_changelog_generator",
+    ".pre-commit-config.yaml",
+    ".ruff_cache/**/*",
+]

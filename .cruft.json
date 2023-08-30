@@ -1,0 +1,19 @@
+{
+  "template": "https://github.com/brisvag/pyrepo-cookiecutter",
+  "commit": "512941898f8eedb7a5984f53987a1194a2160e2a",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "full_name": "Lorenzo Gaifas",
+      "email": "brisvag@gmail.com",
+      "github_username": "brisvag",
+      "project_name": "stemia",
+      "project_slug": "stemia",
+      "project_short_description": "A personal collection of (sometimes...) useful scripts and tools for cryoem/cryoet.",
+      "pypi_username": "brisvag",
+      "generate_docs": false,
+      "_template": "https://github.com/brisvag/pyrepo-cookiecutter"
+    }
+  },
+  "directory": null
+}

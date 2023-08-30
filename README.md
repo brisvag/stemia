@@ -1,5 +1,9 @@
 # STEMIA
 
+[![License](https://img.shields.io/pypi/l/stemia.svg?color=green)](https://github.com/brisvag/stemia/raw/main/LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/stemia.svg?color=green)](https://pypi.org/project/stemia)
+[![Python Version](https://img.shields.io/pypi/pyversions/stemia.svg?color=green)](https://python.org)
+
 **S**cripts and **T**ools for **E**lectron **M**icroscopy **I**mage **A**nalysis.
 
 This is a simple personal collection of (sometimes...) useful scripts and tools for cryoem/cryoet.
