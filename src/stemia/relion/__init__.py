@@ -1,3 +1,1 @@
-"""
-A collection of Relion-related tools and scripts.
-"""
+"""A collection of Relion-related tools and scripts."""

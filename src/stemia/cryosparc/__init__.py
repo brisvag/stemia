@@ -1,3 +1,1 @@
-"""
-A collection of Cryosparc-related tools and scripts.
-"""
+"""A collection of Cryosparc-related tools and scripts."""

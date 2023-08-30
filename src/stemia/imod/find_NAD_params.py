@@ -2,22 +2,22 @@ import click
 
 
 @click.command()
-@click.argument('input', type=click.Path(exists=True, dir_okay=False, resolve_path=True))
-@click.option('-k', '--k-values', type=str, default="0.2,0.4,0.8,1.2,3,5")
-@click.option('-i', '--iterations', type=str, default="2,5,8,10,15,20")
-@click.option('-s', '--std', type=str)
+@click.argument(
+    "input", type=click.Path(exists=True, dir_okay=False, resolve_path=True)
+)
+@click.option("-k", "--k-values", type=str, default="0.2,0.4,0.8,1.2,3,5")
+@click.option("-i", "--iterations", type=str, default="2,5,8,10,15,20")
+@click.option("-s", "--std", type=str)
 def cli(input, k_values, iterations, std):
-    """
-    Test a range of k and iteration values for nad_eed_3d
-    """
-    from pathlib import Path
+    """Test a range of k and iteration values for nad_eed_3d."""
     import re
     from functools import partial
+    from pathlib import Path
 
     import mrcfile
-    from rich.progress import Progress
-    from rich import print
     import sh
+    from rich import print
+    from rich.progress import Progress
 
     inp = Path(input)
     if std is None:
@@ -27,12 +27,13 @@ def cli(input, k_values, iterations, std):
             with mrcfile.open(input) as mrc:
                 std = mrc.data.std()
 
-    ks = [float(k) for k in k_values.split(',')]
-    max_it = max(float(it) for it in iterations.split(','))
+    ks = [float(k) for k in k_values.split(",")]
+    max_it = max(float(it) for it in iterations.split(","))
 
-    it_n = re.compile(r'iteration number:\s+\d+')
+    it_n = re.compile(r"iteration number:\s+\d+")
 
     with Progress() as progress:
+
         def _process_output(task, line):
             if it_n.match(line):
                 progress.update(task, advance=1)
@@ -40,14 +41,19 @@ def cli(input, k_values, iterations, std):
         procs = []
         for k_ in ks:
             k = k_ * std
-            out = inp.with_stem(inp.stem + f'-{k}_i').with_suffix('')
+            out = inp.with_stem(inp.stem + f"-{k}_i").with_suffix("")
 
-            task = progress.add_task(f'Iterating with k={k} ({k_} * std)...', total=max_it)
+            task = progress.add_task(
+                f"Iterating with k={k} ({k_} * std)...", total=max_it
+            )
 
             proc = sh.nad_eed_3d(
-                '-k', k,
-                '-i', iterations,
-                '-e', 'mrc',
+                "-k",
+                k,
+                "-i",
+                iterations,
+                "-e",
+                "mrc",
                 str(inp),
                 str(out),
                 _out=partial(_process_output, task),

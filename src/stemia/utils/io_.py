@@ -1,42 +1,52 @@
 def read_mrc(path):
+    """Read an mrc file."""
     import mrcfile
+
     with mrcfile.open(path) as mrc:
         return mrc.data.copy(), mrc.header
 
 
 def write_mrc(data, path, overwrite=False, from_header=None):
+    """Write an mrc file."""
     import mrcfile
+
     with mrcfile.new(path, data, overwrite=overwrite) as mrc:
         if from_header is not None:
             mrc.header.cella = from_header.cella
 
 
 def read_particle_star(path):
+    """Read a star file."""
     import pandas as pd
     import starfile
+
     dct = starfile.read(path)
     if isinstance(dct, pd.DataFrame):
         df = dct
         optics = None
     else:
-        df = dct['particles']
-        optics = dct['optics']
+        df = dct["particles"]
+        optics = dct["optics"]
     return df, optics
 
 
 def write_particle_star(data, path, overwrite=False, optics=None):
+    """Write a star file."""
     import starfile
+
     if optics is not None:
-        data = {'optics': optics, 'particles': data}
+        data = {"optics": optics, "particles": data}
     starfile.write(data, path, overwrite=overwrite)
 
 
 def parse_xml(node):
     """
-    recursively parse an xml document node from a Warp file
-    return a nested dictionary containing the node data
+    Recursively parse an xml document node from a Warp file.
+
+    Return a nested dictionary containing the node data.
     """
     import numpy as np
+
     # node type 9 is the document node, we immediately dive deeper
     if node.nodeType == 9:
         return parse_xml(node.firstChild)
@@ -47,12 +57,12 @@ def parse_xml(node):
     if node.attributes:
         # Param nodes separate their key/value pairs as
         # different attribute tuples
-        if node_name == 'Param':
+        if node_name == "Param":
             key, value = node.attributes.items()
             node_name = key[1]
             node_content = value[1]
         # Node nodes contain a xyz tuple and a value
-        elif node_name == 'Node':
+        elif node_name == "Node":
             x, y, z, value = node.attributes.items()
             node_name = (x[1], y[1], z[1])
             node_content = value[1]
@@ -72,8 +82,7 @@ def parse_xml(node):
         if not text:
             return {}
         # parse text that contains data points into np.arrays
-        points = np.asarray([p.split('|') for p in text.split(';')],
-                            dtype=np.float32)
+        points = np.asarray([p.split("|") for p in text.split(";")], dtype=np.float32)
         node_content = points
 
     return {node_name: node_content}
@@ -81,9 +90,11 @@ def parse_xml(node):
 
 def xml2dict(xml_path):
     """
-    parse an xml metadata file of a Warp tilt-series image
-    return a dictionary containing the metadata
+    Parse an xml metadata file of a Warp tilt-series image.
+
+    Return a dictionary containing the metadata.
     """
     from xml.dom.minidom import parse
+
     document = parse(xml_path)
     return parse_xml(document)

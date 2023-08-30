@@ -1,3 +1,1 @@
-"""
-A collection of AreTomo-related tools and scripts.
-"""
+"""A collection of AreTomo-related tools and scripts."""

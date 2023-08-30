@@ -1,12 +1,15 @@
-import click
+"""Stemia entry point."""
+
 from pathlib import Path
+
+import click
 
 from .utils.click import add_subcommands, print_command_tree
 
 try:
     from ._version import version
 except ImportError:
-    version = 'unknown'
+    version = "unknown"
 
 
 def _print_tree(ctx, param, value):
@@ -15,10 +18,20 @@ def _print_tree(ctx, param, value):
         ctx.exit()
 
 
-@click.group(name='stemia', context_settings=dict(help_option_names=['-h', '--help'], show_default=True))
+@click.group(
+    name="stemia",
+    context_settings={"help_option_names": ["-h", "--help"], "show_default": True},
+)
 @click.version_option(version=version)
-@click.option('-l', '--list', is_flag=True, is_eager=True, expose_value=False, callback=_print_tree,
-              help='print all the available commands')
+@click.option(
+    "-l",
+    "--list",
+    is_flag=True,
+    is_eager=True,
+    expose_value=False,
+    callback=_print_tree,
+    help="print all the available commands",
+)
 def cli():
     """
     Main entry point for stemia. Several subcommands are available.

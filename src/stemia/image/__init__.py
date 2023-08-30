@@ -1,3 +1,1 @@
-"""
-Simple image manipulation and processing.
-"""
+"""Simple image manipulation and processing."""
