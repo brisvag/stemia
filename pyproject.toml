@@ -38,67 +38,87 @@ dependencies = [
 # extras
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
-csplot =
+csplot = [
     "plotly",
     "magicgui",
     "IPython",
-fix_filament_ids =
+]
+fix_filament_ids = [
     "starfile",
-generate_tilt_angles =
+]
+generate_tilt_angles = [
     "starfile",
-cryosparc =
+]
+cryosparc = [
     "stemia[csplot]",
     "stemia[fix_filament_ids]",
     "stemia[generate_tilt_angles]",
-center_filament =
+]
+center_filament = [
     "scikit-image",
-classify_densities =
+]
+classify_densities = [
     "matplotlib",
     "plotly",
     "edt",
-create_mask =
+]
+create_mask = [
     "edt",
-extract_z_snapshots =
+]
+extract_z_snapshots = [
     "napari[pyqt5]",
     "cryohub",
     "cryotypes",
-flip_z =
+]
+flip_z = [
     "starfile",
     "eulerangles",
-image =
+]
+image = [
     "stemia[center_filament]",
     "stemia[classify_densities]",
     "stemia[create_mask]",
     "stemia[extract_z_snapshots]",
     "stemia[flip_z]",
-align_filament_particles =
+]
+align_filament_particles = [
     "starfile",
-relion =
+]
+relion = [
     "stemia[align_filament_particles]",
-fix_mdoc =
+]
+fix_mdoc = [
     "mdocfile",
-merge_star =
+]
+merge_star = [
     "starfile",
-offset_angle =
+]
+offset_angle = [
     "mdocfile",
-prepare_isonet =
+]
+prepare_isonet = [
     "starfile",
-spoof_mdoc =
+]
+spoof_mdoc = [
     "mdocfile",
-summarize =
+]
+summarize = [
     "tabulate",
-warp =
+]
+warp = [
     "stemia[fix_mdoc]",
     "stemia[merge_star]",
     "stemia[offset_angle]",
     "stemia[prepare_isonet]",
     "stemia[spoof_mdoc]",
     "stemia[summarize]",
-all =
+]
+all = [
     "stemia[cryosparc]",
     "stemia[image]",
     "stemia[relion]",
     "stemia[warp]",
+]
 dev = [
     "black",
     "ipython",
