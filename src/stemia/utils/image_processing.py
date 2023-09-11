@@ -304,14 +304,11 @@ def correlate_rotations(img, features, angle_step=5):
             axes=(1, 2),
         )
     )
-    norm_denominators = np.sqrt(img_autocc.max() * feat_autocc.max(axis=(1, 2)))
+    norm_denominators = np.sqrt(img_autocc.max()) * np.sqrt(feat_autocc.max(axis=(1, 2)))
 
     for feat_ft, denom in zip(feat_fts, norm_denominators):
         best_cc = 0
         for _, feat_ft_rot in rotations(feat_ft, range(0, 360, angle_step)):
-            cc_ft = img_ft_conj * feat_ft_rot
-
-            cc = np.abs(ifftshift(ifftn(ifftshift(cc_ft))))
-
+            cc = np.abs(ifftshift(ifftn(ifftshift(img_ft_conj * feat_ft_rot))))
             best_cc = max(np.max(cc / denom), best_cc)
         yield best_cc
