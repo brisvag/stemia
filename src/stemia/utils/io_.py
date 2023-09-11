@@ -2,8 +2,8 @@ def read_mrc(path):
     """Read an mrc file."""
     import mrcfile
 
-    with mrcfile.open(path) as mrc:
-        return mrc.data.copy(), mrc.header
+    with mrcfile.open(path, "r") as mrc:
+        return mrc.data, mrc.header, mrc.voxel_size
 
 
 def write_mrc(data, path, overwrite=False, from_header=None):
