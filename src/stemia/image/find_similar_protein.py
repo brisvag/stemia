@@ -99,8 +99,9 @@ def cli(
 
                 if px_size < bin_resolution:
                     img = rescale(img, px_size, bin_resolution)
+                    px_size = bin_resolution
                 img = normalize(img, inplace=True)
-                proj = rotated_projections(img, healpix_order=1)
+                proj = rotated_projections(img, healpix_order=2)
 
                 with mrcfile.new(
                     emdb_save_path / proj_path,

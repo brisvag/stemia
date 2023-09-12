@@ -8,16 +8,26 @@ import click
 @click.option(
     "-d", "--data-dir", type=click.Path(exists=True, dir_okay=True, resolve_path=True)
 )
-def cli(mdoc_dir, data_dir):
-    """Fix mdoc files to point to the right data."""
+@click.option("--dates", is_flag=True, help="fix date format")
+@click.option("--paths", is_flag=True, help="fix image paths")
+def cli(mdoc_dir, data_dir, dates, paths):
+    """Fix mdoc files to point to the right data and follow warp format."""
+    import re
     from pathlib import Path
 
-    from mdocfile.mdoc import Mdoc
+    from mdocfile.data_models import Mdoc
     from rich import print
     from rich.progress import track
 
+    if not paths and not dates:
+        raise ValueError("provide at least --paths or --dates")
+
     mdoc_dir = Path(mdoc_dir)
-    data_dir = Path(data_dir)
+    if data_dir is None:
+        data_dir = mdoc_dir
+    else:
+        data_dir = Path(data_dir)
+
     mdocs = [f for f in mdoc_dir.glob("*.mdoc") if not f.stem.endswith("_fixed")]
     failed = {}
     for md_file in track(mdocs, description="Fixing..."):
@@ -25,17 +35,26 @@ def cli(mdoc_dir, data_dir):
         basename = mdoc.global_data.ImageFile.stem
         cleaned_sections = []
         for section in mdoc.section_data:
-            # find correct file based on basename, zvalue and tilt angle
-            glob = f"{basename}_{section.ZValue + 1:03}_{round(section.TiltAngle):.2f}_*.mrc"
+            if paths:
+                # find correct file based on basename, zvalue and tilt angle
+                glob = f"{basename}_{section.ZValue + 1:03}_{round(section.TiltAngle):.2f}_*.mrc"
 
-            try:
-                newpath = next(data_dir.glob(glob))
-            except StopIteration:
-                failed.setdefault(md_file, []).append(glob)
-                continue
+                try:
+                    newpath = next(data_dir.glob(glob))
+                except StopIteration:
+                    failed.setdefault(md_file, []).append(glob)
+                    continue
 
-            # replace path with the correct file (only name matters)
-            section.SubFramePath = rf"X:\spoof\frames\{newpath.name}"
+                # replace path with the correct file (only name matters)
+                section.SubFramePath = rf"X:\spoof\frames\{newpath.name}"
+
+            if dates:
+                # fix datetime to warp-compatible format (dd-MMM-yy)
+                if section.DateTime is not None:
+                    # crop year
+                    section.DateTime = re.sub(r"-\d\d(\d\d)", r"-\1", section.DateTime)
+                    # swap year and day if detectable american format
+
             cleaned_sections.append(section)
 
         mdoc.section_data = cleaned_sections

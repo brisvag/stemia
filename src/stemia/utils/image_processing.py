@@ -228,7 +228,7 @@ def fourier_resize(img, target_shape, axes=None):
         ft_resized = ft[crop_slice]
         cropped_shape = np.array(ft_resized.shape)
         # needed for edge artifacts
-        window = gaussian_window(cropped_shape, cropped_shape / 5)
+        window = gaussian_window(cropped_shape, cropped_shape / 4)
         ft_resized *= window
     elif np.all(target_shape >= img.shape):
         edge_pad = ((target_shape - img.shape) // 2).astype(int)
@@ -304,7 +304,9 @@ def correlate_rotations(img, features, angle_step=5):
             axes=(1, 2),
         )
     )
-    norm_denominators = np.sqrt(img_autocc.max()) * np.sqrt(feat_autocc.max(axis=(1, 2)))
+    norm_denominators = np.sqrt(img_autocc.max()) * np.sqrt(
+        feat_autocc.max(axis=(1, 2))
+    )
 
     for feat_ft, denom in zip(feat_fts, norm_denominators):
         best_cc = 0
