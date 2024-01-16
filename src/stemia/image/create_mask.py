@@ -12,7 +12,9 @@ import click
     type=click.Choice(["sphere", "cylinder", "threshold"]),
     default="sphere",
 )
-@click.option("-c", "--center", type=float, help="center of the mask")
+@click.option(
+    "-c", "--center", type=str, help="center of the mask (comma-separated floats)"
+)
 @click.option(
     "-a", "--axis", type=int, default=0, help="main symmetry axis (for cylinder)"
 )
@@ -58,34 +60,50 @@ def cli(
 
     import mrcfile
     import numpy as np
+    from rich.progress import Progress
 
     from ..utils.image_processing import compute_dist_field, create_mask_from_field
 
     if Path(output).is_file() and not overwrite:
         raise click.UsageError(f'{output} exists but "-f" flag was not passed')
 
+    center = None if center is None else np.array([float(c) for c in center.split(",")])
+
     with mrcfile.open(input, header_only=True, permissive=True) as mrc:
         cell = mrc.header.cella
         shape = mrc.header[["nx", "ny", "nz"]].item()
         px_size = mrc.voxel_size.item()[0]
 
+    if mask_type == "threshold":
+        # data is needed for thresholding mode
+        with mrcfile.open(input, header_only=False, permissive=True) as mrc:
+            image = mrc.data
+    else:
+        image = None
+
     if ang:
         radius *= px_size
         padding *= px_size
 
-    dist_field = compute_dist_field(
-        shape=shape,
-        field_type=mask_type,
-        center=center,
-        axis=axis,
-        threshold=threshold,
-    )
+    with Progress() as progress:
+        task = progress.add_task("Computing distance field...", total=None)
+        dist_field = compute_dist_field(
+            shape=shape,
+            field_type=mask_type,
+            image=image,
+            center=center,
+            axis=axis,
+            threshold=threshold,
+        )
+        progress.update(task, total=1, completed=1)
 
-    mask = create_mask_from_field(
-        field=dist_field,
-        radius=radius,
-        padding=padding,
-    )
+        task = progress.add_task("Generating mask...", total=None)
+        mask = create_mask_from_field(
+            field=dist_field,
+            radius=radius,
+            padding=padding,
+        )
 
-    with mrcfile.new(output, mask.astype(np.float32), overwrite=overwrite) as mrc:
-        mrc.header.cella = cell
+        with mrcfile.new(output, mask.astype(np.float32), overwrite=overwrite) as mrc:
+            mrc.header.cella = cell
+        progress.update(task, total=1, completed=1)

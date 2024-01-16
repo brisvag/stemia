@@ -110,7 +110,9 @@ def coerce_ndim(img, ndim):
     return img
 
 
-def compute_dist_field(shape, field_type, center=None, axis=None, threshold=None):
+def compute_dist_field(
+    shape, field_type, image=None, center=None, axis=None, threshold=None
+):
     """Compute a distance field for a give nd-image."""
     if center is None:
         center = np.array(shape) / 2
@@ -131,11 +133,8 @@ def compute_dist_field(shape, field_type, center=None, axis=None, threshold=None
         dists = np.linalg.norm(indices - line, axis=-1)
     elif field_type == "threshold":
         import edt
-        import mrcfile
 
-        with mrcfile.open(input, permissive=True) as mrc:
-            data = mrc.data
-        binarized = data > threshold
+        binarized = image > threshold
         dists = -edt.sdf(binarized)
 
     return dists
