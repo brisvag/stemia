@@ -62,7 +62,7 @@ Try `stemia -h` for help, or `stemia -l` for the command tree:
 │   ├── align_filament_particles:  Fix filament PsiPriors so they are consistent within a filament.
 │   └── edit_star:  Simple search-replace utility for star files.
 └── warp:  A collection of Warp-related tools and scripts.
-    ├── fix_mdoc:  Fix mdoc files to point to the right data.
+    ├── fix_mdoc:  Fix mdoc files to point to the right data and follow warp format.
     ├── merge_star:  Merge star files ignoring optic groups and ensuring columns for warp.
     ├── offset_angle:  Offset tilt angles in warp xml files.
     ├── parse_xml:  Parse a warp xml file and print its content.
@@ -214,7 +214,7 @@ Usage: stemia image create_mask [OPTIONS] INPUT OUTPUT
 
 Options:
   -t, --mask-type [sphere|cylinder|threshold]
-  -c, --center FLOAT              center of the mask
+  -c, --center TEXT               center of the mask (comma-separated floats)
   -a, --axis INTEGER              main symmetry axis (for cylinder)
   -r, --radius FLOAT              radius of the mask. If thresholding,
                                   equivalent to "hard padding"  [required]
@@ -363,10 +363,12 @@ Options:
 ```
 Usage: stemia warp fix_mdoc [OPTIONS] MDOC_DIR
 
-  Fix mdoc files to point to the right data.
+  Fix mdoc files to point to the right data and follow warp format.
 
 Options:
   -d, --data-dir PATH
+  --dates              fix date format
+  --paths              fix image paths
   --help               Show this message and exit.
 ```
 
