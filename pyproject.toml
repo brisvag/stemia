@@ -74,12 +74,18 @@ flip_z = [
     "starfile",
     "eulerangles",
 ]
+project_profile = [
+    "kaleido",
+    "napari",
+    "plotly",
+]
 image = [
     "stemia[center_filament]",
     "stemia[classify_densities]",
     "stemia[create_mask]",
     "stemia[extract_z_snapshots]",
     "stemia[flip_z]",
+    "stemia[project_profile]",
 ]
 align_filament_particles = [
     "starfile",
