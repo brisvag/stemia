@@ -12,6 +12,11 @@ import click
     type=click.Path(dir_okay=True, resolve_path=True),
 )
 @click.option(
+    "--mrc",
+    is_flag=True,
+    help="also output mrc files",
+)
+@click.option(
     "-n",
     "--n-slices",
     default=5,
@@ -36,7 +41,7 @@ import click
     help="range of slices to image (A,B)",
 )
 @click.option("--axis", default=0, type=int, help="axis along which to do the slicing")
-def cli(inputs, output_dir, keep_extrema, n_slices, average, axis, size, rng):
+def cli(inputs, output_dir, mrc, keep_extrema, n_slices, average, axis, size, rng):
     """
     Grab z slices at regular intervals from a tomogram as jpg images.
 
@@ -55,27 +60,28 @@ def cli(inputs, output_dir, keep_extrema, n_slices, average, axis, size, rng):
     from scipy.ndimage import convolve
 
     out = Path(output_dir)
-    data = [i for i in cryohub.read(*inputs) if isinstance(i, ImageProtocol)]
-    if not data:
+    images = [i for i in cryohub.read(*inputs) if isinstance(i, ImageProtocol)]
+    if not images:
         return
+
+    if size is not None:
+        size = [int(s) for s in size.split(",")]
 
     out.mkdir(parents=True, exist_ok=True)
     v = napari.Viewer()
     with Progress() as progress:
-        for d in progress.track(data, description="Processing inputs"):
-            img = np.moveaxis(d.data, axis, 0)
+        for image in progress.track(images, description="Processing inputs"):
+            img = np.moveaxis(image.data, axis, 0)
             if average > 1:
                 avg_weights = np.ones((average, 1, 1)) / average
                 img = convolve(img, avg_weights)
 
             v.add_image(img, interpolation2d="spline36")
 
-            if size is not None:
-                size = [int(s) for s in size.split(",")]
-            else:
-                size = img.shape[1:]
+            if size is None:
+                output_size = img.shape[1:]
 
-            v.window._qt_viewer.canvas.size = size
+            v.window._qt_viewer.canvas.size = output_size
             v.reset_view()
             v.camera.zoom *= 1.2
 
@@ -90,7 +96,15 @@ def cli(inputs, output_dir, keep_extrema, n_slices, average, axis, size, rng):
                 idx = start + int(i * step_size)
                 v.dims.set_current_step(0, idx)
 
-                save_as = out / (d.source.stem + f"_slice_{idx:03}.png")
-                v.screenshot(save_as, size=size, canvas_only=True)
+                save_as = out / (image.source.stem + f"_slice_{idx:03}.png")
+                v.screenshot(save_as, size=output_size, canvas_only=True)
+
+                if mrc:
+                    import mrcfile
+
+                    with mrcfile.new(
+                        save_as.with_suffix(".mrc"), data=img[idx], overwrite=True
+                    ) as mrc_f:
+                        mrc_f.voxel_size = image.pixel_spacing
 
             v.layers.clear()
