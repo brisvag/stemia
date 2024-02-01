@@ -285,7 +285,13 @@ def compute(proj_dir, overwrite):
 @click.argument(
     "inputs", nargs=-1, type=click.Path(exists=True, dir_okay=True, resolve_path=True)
 )
-def aggregate(inputs):
+@click.option(
+    "-o",
+    "--output-name",
+    type=str,
+    help="Title/filename given to the aggregated outputs.",
+)
+def aggregate(inputs, output_name):
     """Aggregate the generated data into general stats about given subsets.
 
     Inputs are subdirectories of the project_dir from compute.
@@ -307,19 +313,18 @@ def aggregate(inputs):
         dfs.append(pd.read_csv(subdir / "thickness.csv", index_col=0))
 
     df = pd.concat(dfs)
-    fig = px.violin(
-        df, title=f'Aggregated thickness distribution for {", ".join(names)}.'
-    )
+    fig = px.violin(df, title=f"Aggregated thickness distribution of {output_name}.")
     fig.update_layout(yaxis_title="Thickness (Å)")
     fig.show()
+
+    out_img = subdir.parent / f"thickness_{output_name}.png"
     fig.write_image(
-        subdir.parent / f'thickness_aggregated_{"_".join(names)}.png',
+        out_img,
         width=700,
         height=700,
     )
-    summary = df.describe()
-    print(summary)
-    summary.to_csv(subdir.parent / f'thickness_aggregated_{"_".join(names)}.csv')
+    print(df.describe())
+    df.to_csv(out_img.with_suffix(".csv"))
 
 
 if __name__ == "__main__":
