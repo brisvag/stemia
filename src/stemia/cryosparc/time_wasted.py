@@ -20,6 +20,7 @@ def cli(project_dirs):
         for proj in prog.track(project_dirs, description="Reading projects..."):
             proj = Path(proj)
             total_time = timedelta(0)
+            total_queue = timedelta(0)
             skipped = 0
             jobs = list(proj.glob("J*"))
             for job in prog.track(jobs, description="Reading jobs..."):
@@ -37,6 +38,8 @@ def cli(project_dirs):
                     skipped += 1
                     continue
 
+                launch = meta["launched_at"]
+
                 end = meta["completed_at"]
                 if end is None:
                     end = meta["failed_at"]
@@ -46,10 +49,20 @@ def cli(project_dirs):
                     continue
 
                 total_time += timedelta(milliseconds=end["$date"] - start["$date"])
+                total_queue += timedelta(milliseconds=start["$date"] - launch["$date"])
 
-            print(f"Time wasted on {proj.name}: {total_time}.")
+            tot_with_queue = total_time + total_queue
+            print(
+                f"Time wasted on [green]{proj.name}[/]: "
+                f"[bold red]{total_time.days} days and {int(total_time.seconds / 3600)} hours[/].\n"
+                "Counting queue time: "
+                f"[bold red]{tot_with_queue.days} days and {int(total_time.seconds / 3600)} hours[/]."
+            )
             if skipped:
                 print(
-                    f"This is an underestimation; {skipped} jobs "
-                    f"({int(skipped*100/len(jobs))}%) were skipped due to missing metadata."
+                    f"[italic white]This is an underestimation; {skipped} jobs "
+                    f"({int(skipped*100/len(jobs))}%) were skipped due to missing metadata.[/]"
                 )
+            print(
+                "================================================================================"
+            )
