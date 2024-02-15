@@ -19,8 +19,13 @@ def cli(project_dirs):
     with Progress() as prog:
         for proj in prog.track(project_dirs, description="Reading projects..."):
             proj = Path(proj)
-            total_time = timedelta(0)
-            total_queue = timedelta(0)
+
+            total_running = timedelta(0)
+            total_queued = timedelta(0)
+            total_cpu = timedelta(0)
+            total_gpu = timedelta(0)
+            total_interactive = timedelta(0)
+
             skipped = 0
             jobs = list(proj.glob("J*"))
             for job in prog.track(jobs, description="Reading jobs..."):
@@ -48,15 +53,38 @@ def cli(project_dirs):
                     skipped += 1
                     continue
 
-                total_time += timedelta(milliseconds=end["$date"] - start["$date"])
-                total_queue += timedelta(milliseconds=start["$date"] - launch["$date"])
+                running = timedelta(milliseconds=end["$date"] - start["$date"])
+                queued = timedelta(milliseconds=start["$date"] - launch["$date"])
 
-            tot_with_queue = total_time + total_queue
+                total_queued += queued
+
+                if meta["interactive"]:
+                    total_interactive += running
+
+                resources = meta["resources_needed"].get("slots", None)
+                if resources is None and meta.get("run_on_master_direct", False):
+                    cpus = 1 * running  # I guess...
+                    gpus = 0 * running
+                else:
+                    cpus = resources.get("CPU", 0) * running
+                    gpus = resources.get("GPU", 0) * running
+
+                total_running += running
+                total_cpu += cpus
+                total_gpu += gpus
+
+            tot_with_queue = total_running + total_queued
             print(
-                f"Time wasted on [green]{proj.name}[/]: "
-                f"[bold red]{total_time.days} days and {int(total_time.seconds / 3600)} hours[/].\n"
+                f"Time wasted by processors on [green]{proj.name}[/]: "
+                f"[bold red]{total_running.days} days and {int(total_running.seconds / 3600)} hours[/].\n"
+                f"Time wasted by you sitting in interactive jobs: "
+                f"[bold red]{total_interactive.days} days and {int(total_interactive.seconds / 3600)} hours[/].\n"
                 "Counting queue time: "
-                f"[bold red]{tot_with_queue.days} days and {int(total_time.seconds / 3600)} hours[/]."
+                f"[bold red]{tot_with_queue.days} days and {int(tot_with_queue.seconds / 3600)} hours[/].\n"
+                "If this project had been running on a single average CPU core\n"
+                "and a single average GPU, it would have taken:\n"
+                f"[bold red]{total_cpu.days} days and {int(total_cpu.seconds / 3600)} hours[/] of CPU time and\n"
+                f"[bold red]{total_gpu.days} days and {int(total_gpu.seconds / 3600)} hours[/] of GPU time.\n"
             )
             if skipped:
                 print(
