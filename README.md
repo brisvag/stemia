@@ -47,7 +47,8 @@ Try `stemia -h` for help, or `stemia -l` for the command tree:
 │   ├── csplot:  Read a cryosparc job directory and plot interactively any column.
 │   ├── fix_filament_ids:  Replace cryosparc filament ids with small unique integers.
 │   ├── generate_tilt_angles:  Generate angle priors for a tilted dataset.
-│   └── merge_defects_gainref:  Merge serialEM defects and gainref for cryosparc usage.
+│   ├── merge_defects_gainref:  Merge serialEM defects and gainref for cryosparc usage.
+│   └── time_wasted:  Print the total amount of time wasted on a project.
 ├── image:  Simple image manipulation and processing.
 │   ├── center_filament:  Center an mrc image (stack) containing filament(s).
 │   ├── classify_densities:  Do hierarchical classification of particle stacks based on densities.
@@ -55,6 +56,10 @@ Try `stemia -h` for help, or `stemia -l` for the command tree:
 │   ├── extract_z_snapshots:  Grab z slices at regular intervals from a tomogram as jpg images.
 │   ├── flip_z:  Flip the z axis for particles in a RELION star file.
 │   ├── fourier_crop:  Bin mrc images to the specified pixel size using fourier cropping.
+│   ├── project_profiles:  Project re-extracted and straightened membranes and get some stats.
+│   │   ├── prepare:  Generate and select 2D chunked projections for the input data.
+│   │   ├── compute:  Take the outputs from prepare and compute statistics and plots.
+│   │   └── aggregate:  Aggregate the generated data into general stats about given subsets.
 │   └── rescale:  Rescale an mrc image to the specified pixel size.
 ├── imod:  A collection of IMOD-related tools and scripts.
 │   └── find_NAD_params:  Test a range of k and iteration values for nad_eed_3d.
@@ -166,6 +171,20 @@ Options:
   --help                     Show this message and exit.
 ```
 
+### stemia cryosparc time_wasted
+
+```
+Usage: stemia cryosparc time_wasted [OPTIONS] [PROJECT_DIRS]...
+
+  Print the total amount of time wasted on a project.
+
+Options:
+  -u, --useful_jobs TEXT  ID of job that gave useful results. Its running time
+                          and that of its parents will be used to calculate
+                          useful time. Can be passed multiple times.
+  --help                  Show this message and exit.
+```
+
 ### stemia image center_filament
 
 ```
@@ -238,6 +257,7 @@ Usage: stemia image extract_z_snapshots [OPTIONS] [INPUTS]...
 
 Options:
   -o, --output-dir PATH
+  --mrc                   also output mrc files
   -n, --n-slices INTEGER  number of equidistant slices to extract
   --keep-extrema          whether to keep slices at z=0 and z=-1 (if false,
                           slices is reduced by 2)
@@ -279,6 +299,46 @@ Options:
   -b, --binning FLOAT  binning amount  [required]
   -f, --overwrite      overwrite output if exists
   --help               Show this message and exit.
+```
+
+### stemia image project_profiles prepare
+
+```
+Usage: stemia image project_profiles prepare [OPTIONS] [PATHS]...
+
+  Generate and select 2D chunked projections for the input data.
+
+Options:
+  -o, --output PATH         [required]
+  -s, --chunk-size INTEGER
+  -f, --overwrite
+  --help                    Show this message and exit.
+```
+
+### stemia image project_profiles compute
+
+```
+Usage: stemia image project_profiles compute [OPTIONS] PROJ_DIR
+
+  Take the outputs from prepare and compute statistics and plots.
+
+Options:
+  -f, --overwrite
+  --help           Show this message and exit.
+```
+
+### stemia image project_profiles aggregate
+
+```
+Usage: stemia image project_profiles aggregate [OPTIONS] [INPUTS]...
+
+  Aggregate the generated data into general stats about given subsets.
+
+  Inputs are subdirectories of the project_dir from compute.
+
+Options:
+  -o, --output-name TEXT  Title/filename given to the aggregated outputs.
+  --help                  Show this message and exit.
 ```
 
 ### stemia image rescale
