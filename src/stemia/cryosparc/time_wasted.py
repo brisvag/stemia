@@ -7,8 +7,23 @@ import click
     nargs=-1,
     type=click.Path(exists=True, dir_okay=True, resolve_path=True),
 )
-def cli(project_dirs):
+@click.option(
+    "-u",
+    "--useful_jobs",
+    type=str,
+    multiple=True,
+    help=(
+        "ID of job that gave useful results. Its running time and that of its parents "
+        "will be used to calculate useful time. Can be passed multiple times."
+    ),
+)
+def cli(project_dirs, useful_jobs):
     """Print the total amount of time wasted on a project."""
+    if len(project_dirs) > 1 and useful_jobs:
+        raise click.UsageError(
+            "do not provide useful_job when analysing more than one project"
+        )
+
     import json
     from datetime import timedelta
     from pathlib import Path
@@ -25,8 +40,25 @@ def cli(project_dirs):
             total_cpu = timedelta(0)
             total_gpu = timedelta(0)
             total_interactive = timedelta(0)
-
             skipped = 0
+
+            parents = set()
+            total_useful = timedelta(0)
+
+            if useful_jobs:
+
+                def get_parents(job, proj, parents):
+                    with open(proj / job / "job.json") as f:
+                        meta = json.load(f)
+
+                    parents.add(job)
+                    for par in meta["parents"]:
+                        if par not in parents:
+                            get_parents(par, proj, parents)
+
+                for job in useful_jobs:
+                    get_parents(job, proj, parents)
+
             jobs = list(proj.glob("J*"))
             for job in prog.track(jobs, description="Reading jobs..."):
                 job_meta = job / "job.json"
@@ -70,10 +102,17 @@ def cli(project_dirs):
                     gpus = resources.get("GPU", 0) * running
 
                 total_running += running
+
+                if useful_jobs and job.name in parents:
+                    total_useful += running
+
                 total_cpu += cpus
                 total_gpu += gpus
 
             tot_with_queue = total_running + total_queued
+            print(
+                "================================================================================"
+            )
             print(
                 f"Time wasted by processors on [green]{proj.name}[/]: "
                 f"[bold red]{total_running.days} days and {int(total_running.seconds / 3600)} hours[/].\n"
@@ -81,16 +120,22 @@ def cli(project_dirs):
                 f"[bold red]{total_interactive.days} days and {int(total_interactive.seconds / 3600)} hours[/].\n"
                 "Counting queue time: "
                 f"[bold red]{tot_with_queue.days} days and {int(tot_with_queue.seconds / 3600)} hours[/].\n"
+            )
+            print(
                 "If this project had been running on a single average CPU core\n"
                 "and a single average GPU, it would have taken:\n"
                 f"[bold red]{total_cpu.days} days and {int(total_cpu.seconds / 3600)} hours[/] of CPU time and\n"
                 f"[bold red]{total_gpu.days} days and {int(total_gpu.seconds / 3600)} hours[/] of GPU time.\n"
             )
+            if useful_jobs:
+                print(
+                    f"The useful jobs ([green]{', '.join(useful_jobs)}[/] "
+                    f"and their {len(parents) - len(useful_jobs)} parents) ran for: "
+                    f"[bold red]{total_useful.days} days and {int(total_useful.seconds / 3600)} hours[/].\n"
+                    f"Which means you wasted {100 * (1 - total_useful / total_running):.2f}% of your time.\n"
+                )
             if skipped:
                 print(
                     f"[italic white]This is an underestimation; {skipped} jobs "
                     f"({int(skipped*100/len(jobs))}%) were skipped due to missing metadata.[/]"
                 )
-            print(
-                "================================================================================"
-            )
