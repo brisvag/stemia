@@ -68,7 +68,6 @@ Try `stemia -h` for help, or `stemia -l` for the command tree:
 │   └── edit_star:  Simple search-replace utility for star files.
 └── warp:  A collection of Warp-related tools and scripts.
     ├── fix_mdoc:  Fix mdoc files to point to the right data and follow warp format.
-    ├── merge_star:  Merge star files ignoring optic groups and ensuring columns for warp.
     ├── offset_angle:  Offset tilt angles in warp xml files.
     ├── parse_xml:  Parse a warp xml file and print its content.
     ├── prepare_isonet:  Update an isonet starfile with preprocessing data from warp.
@@ -430,19 +429,6 @@ Options:
   --dates              fix date format
   --paths              fix image paths
   --help               Show this message and exit.
-```
-
-### stemia warp merge_star
-
-```
-Usage: stemia warp merge_star [OPTIONS] [STAR_FILES]...
-
-  Merge star files ignoring optic groups and ensuring columns for warp.
-
-Options:
-  -o, --star-output FILE  where to put the merged star file  [required]
-  -f, --overwrite         overwrite output if exists
-  --help                  Show this message and exit.
 ```
 
 ### stemia warp offset_angle
