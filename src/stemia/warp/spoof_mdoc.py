@@ -23,12 +23,16 @@ def cli(rawtlt_files, dose_per_image, pixel_size, extension, overwrite):
 
     RAWTLT_FILES: simple file with one tilt angle per line. Order should match sorted filenames.
     """
-    from pathlib import Path
+    if not rawtlt_files:
+        return
 
-    from mdocfile.mdoc import Mdoc, MdocGlobalData, MdocSectionData
+    from pathlib import Path, PureWindowsPath
+
+    from mdocfile.data_models import Mdoc, MdocGlobalData, MdocSectionData
     from rich.progress import track
 
     angles = {}
+
     for ang_file in rawtlt_files:
         with open(ang_file) as f:
             angles[Path(ang_file).stem] = [
@@ -48,10 +52,10 @@ def cli(rawtlt_files, dose_per_image, pixel_size, extension, overwrite):
         ):
             section = MdocSectionData(
                 ZValue=len(mdoc.section_data),
-                StagePosition="0 0",
+                StagePosition=(0, 0),
                 TiltAngle=angle,
                 ExposureDose=dose_per_image,
-                SubFramePath=rf"X:\spoof\frames\{img.name}",
+                SubFramePath=PureWindowsPath(rf"X:\spoof\frames\{img.name}"),
             )
             mdoc.section_data.append(section)
         with open(datadir / (basename + ".mdoc"), "w+" if overwrite else "w") as f:
