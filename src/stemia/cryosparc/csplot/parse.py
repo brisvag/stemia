@@ -40,7 +40,9 @@ def find_cs_files(job_dir, sets=None, visited=None):
         with open(job_dir / "job.json") as f:
             job = json.load(f)
     except FileNotFoundError:
-        warnings.warn(f'parent job "{job_dir.name}" is missing or corrupted')
+        warnings.warn(
+            f'parent job "{job_dir.name}" is missing or corrupted', stacklevel=2
+        )
         return files
 
     j_type = job["type"]
@@ -92,7 +94,8 @@ def find_cs_files(job_dir, sets=None, visited=None):
                 if not f.exists():
                     warnings.warn(
                         "the following file was supposed to contain relevant information, "
-                        f"but does not exist:\n{f}"
+                        f"but does not exist:\n{f}",
+                        stacklevel=2,
                     )
                     file_set.remove(f)
 
