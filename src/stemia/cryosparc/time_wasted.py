@@ -25,11 +25,19 @@ def cli(project_dirs, useful_jobs):
         )
 
     import json
-    from datetime import timedelta
+    import logging
+    from datetime import datetime, timedelta
     from pathlib import Path
 
     from rich import print
+    from rich.logging import RichHandler
     from rich.progress import Progress
+
+    logging.basicConfig(
+        format="%(message)s",
+        datefmt="[%X]",
+        handlers=[RichHandler()],
+    )
 
     with Progress() as prog:
         for proj in prog.track(project_dirs, description="Reading projects..."):
@@ -63,7 +71,7 @@ def cli(project_dirs, useful_jobs):
             for job in prog.track(jobs, description="Reading jobs..."):
                 job_meta = job / "job.json"
                 if not job_meta.exists():
-                    # print(f'Missing job metadata for {job.name}, skipping.')
+                    logging.log(f"Missing job metadata for {job.name}, skipping.")
                     skipped += 1
                     continue
                 with open(job_meta) as f:
@@ -71,7 +79,7 @@ def cli(project_dirs, useful_jobs):
 
                 start = meta["started_at"]
                 if start is None:
-                    # print(f'job {job.name} was not started, skipping')
+                    logging.info(f"job {job.name} was not started, skipping")
                     skipped += 1
                     continue
 
@@ -81,12 +89,20 @@ def cli(project_dirs, useful_jobs):
                 if end is None:
                     end = meta["failed_at"]
                 if end is None:
-                    # print(f'job {job.name} was not finished, skipping')
+                    logging.info(f"job {job.name} was not finished, skipping")
                     skipped += 1
                     continue
 
-                running = timedelta(milliseconds=end["$date"] - start["$date"])
-                queued = timedelta(milliseconds=start["$date"] - launch["$date"])
+                if isinstance(end["$date"], int):
+                    running = timedelta(milliseconds=end["$date"] - start["$date"])
+                    queued = timedelta(milliseconds=start["$date"] - launch["$date"])
+                elif isinstance(end["$date"], str):
+                    running = datetime.fromisoformat(
+                        end["$date"]
+                    ) - datetime.fromisoformat(start["$date"])
+                    queued = datetime.fromisoformat(
+                        start["$date"]
+                    ) - datetime.fromisoformat(launch["$date"])
 
                 total_queued += queued
 
