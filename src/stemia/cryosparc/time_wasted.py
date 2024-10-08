@@ -39,6 +39,8 @@ def cli(project_dirs, useful_jobs):
         handlers=[RichHandler()],
     )
 
+    logger = logging.getLogger(__name__)
+
     with Progress() as prog:
         for proj in prog.track(project_dirs, description="Reading projects..."):
             proj = Path(proj)
@@ -71,7 +73,7 @@ def cli(project_dirs, useful_jobs):
             for job in prog.track(jobs, description="Reading jobs..."):
                 job_meta = job / "job.json"
                 if not job_meta.exists():
-                    logging.log(f"Missing job metadata for {job.name}, skipping.")
+                    logger.info(f"Missing job metadata for {job.name}, skipping.")
                     skipped += 1
                     continue
                 with open(job_meta) as f:
@@ -79,7 +81,7 @@ def cli(project_dirs, useful_jobs):
 
                 start = meta["started_at"]
                 if start is None:
-                    logging.info(f"job {job.name} was not started, skipping")
+                    logger.info(f"job {job.name} was not started, skipping")
                     skipped += 1
                     continue
 
@@ -89,7 +91,7 @@ def cli(project_dirs, useful_jobs):
                 if end is None:
                     end = meta["failed_at"]
                 if end is None:
-                    logging.info(f"job {job.name} was not finished, skipping")
+                    logger.info(f"job {job.name} was not finished, skipping")
                     skipped += 1
                     continue
 
